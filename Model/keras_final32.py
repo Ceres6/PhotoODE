@@ -23,7 +23,7 @@ t_y = le.transform(y)
 
 batch_size = 128
 num_classes = len(le.classes_)
-epochs = 20
+epochs = 200
 
 # input image dimensions
 img_rows, img_cols = 32, 32

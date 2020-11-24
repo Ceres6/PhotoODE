@@ -1,7 +1,8 @@
 import numpy
+import os
+from pathlib import Path
 import numpy as np
 import cv2
-import os
 import glob
 import ntpath
 import skimage
@@ -15,6 +16,10 @@ import shutil
 
 # All available labels generated from pic names (using set)
 
+directory = os.path.join(Path(os.path.abspath(__file__)).parent, "annotated", 'syms')
+
+cat = {filename.split('_')[3] for filename in os.listdir(directory)}
+print(f'All categories are: {cat}')
 
 categories = ['c', 's', 'y', 'pi', '3', '0', '6', '1', 'mul', 'p', 'cos', '2',
               'n', 'A', '-', 'pm', 'a', '+', '(', 'sqrt', 'sin', 'x', 'div', 'dots', 'tan',
@@ -53,14 +58,14 @@ def padding_32(img):
 
 # path of dataset
 path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'annotated', 'syms')
-print(f'path is {path}')
+# print(f'path is {path}')
 
 # all paths of pics
 pics = glob.glob(path + '/*.png')
 
 # length of pics
 pic_nums = len(pics)
-print(f'There are {pic_nums} pics')
+# print(f'There are {pic_nums} pics')
 # init x, y and pre-alloc mem
 x = np.empty((pic_nums * 32 * 32))
 y = np.empty(pic_nums, dtype=str)
@@ -71,7 +76,7 @@ py = 0  # pointer to append label
 for pic in pics:
     # get label from each pic name
     label = ntpath.basename(pic).split('_')[3]
-    print(f'actual label is {label}')
+    # print(f'actual label is {label}')
     # print(pic)
     # print(label)
     # print(py)
