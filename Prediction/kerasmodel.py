@@ -1,4 +1,6 @@
 import keras
+import os
+from pathlib import Path
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
@@ -63,6 +65,6 @@ class KerasModel(object):
         model.compile(loss=keras.losses.categorical_crossentropy,
                       optimizer=keras.optimizers.Adadelta(),
                       metrics=['accuracy'])
-
-        model.load_weights("model_final32_1.h5")
-        return (model, le)
+        weights_file = os.path.join(Path(os.path.abspath(__file__)).parent.parent, 'Model', 'model_final32_1_carlos.h5')
+        model.load_weights(weights_file)
+        return model, le

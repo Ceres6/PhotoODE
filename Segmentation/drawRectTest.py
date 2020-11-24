@@ -10,9 +10,8 @@ path = os.path.join(os.getcwd(), 'Segmentation', 'annotated', 'eqs')
 pics = glob.glob(path + '/*.png')
 
 kernel = np.ones((3, 3), np.uint8)
-i=0
-t=len(pics)
-for pic in pics:
+t = len(pics)
+for i, pic in enumerate(pics):
     img = cv2.imread(pic, 0)
     # Convert to grayscale and apply Gaussian filtering
     img = cv2.GaussianBlur(img, (11, 11), 0)
@@ -30,6 +29,5 @@ for pic in pics:
                                                  rect[2], rect[1] + rect[3]), (0, 255, 0), 1)
     cv2.imwrite(os.path.join(os.getcwd(), 'output',
                              ntpath.basename(pic)), imgc)
-    sys.stdout.write("\r%d/%d" % (i,t))
+    sys.stdout.write("\r%d/%d" % (i, t))
     sys.stdout.flush()
-    i+=1

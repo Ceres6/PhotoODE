@@ -1,4 +1,6 @@
 from __future__ import print_function
+from pathlib import Path
+import os
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
@@ -9,8 +11,9 @@ import numpy as np
 from sklearn import preprocessing
 import h5py
 
-#data = np.load('nist_annotated.npz')
-data = np.load('train32_raw.npz')
+# data = np.load('nist_annotated.npz')
+# print(Path(os.path.abspath(__file__)).parent.parent)
+data = np.load(os.path.join(Path(os.path.abspath(__file__)).parent.parent, 'DataPreparation', 'train32_raw_carlos.npz'))
 x = data['x']
 y = data['y']
 
@@ -27,7 +30,7 @@ img_rows, img_cols = 32, 32
 
 
 if K.image_data_format() == 'channels_first':
-    x= x.reshape(y.shape[0], 1, img_rows, img_cols)
+    x = x.reshape(y.shape[0], 1, img_rows, img_cols)
     input_shape = (1, img_rows, img_cols)
 else:
     x = x.reshape(y.shape[0], img_rows, img_cols, 1)
@@ -71,4 +74,4 @@ model.fit(x, y,
 
 
 # serialize weights to HDF5
-model.save_weights("model_final32_1.h5")
+model.save_weights(os.path.join(Path(os.path.abspath(__file__)).parent, "model_final32_1_carlos.h5"))

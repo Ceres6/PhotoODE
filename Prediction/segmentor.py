@@ -13,8 +13,10 @@ import skimage.transform
 cropped_imgs = []
 cropped_rects = []
 
+
 def getName(rect):
     return str(rect[0]) + '_' + str(rect[1]) + '_' + str(rect[0]+rect[2]) + "_" + str(rect[1] + rect[3]) + '.png'
+
 
 def targetNum(blobs_labels):
     (h, w) = blobs_labels.shape
@@ -35,6 +37,7 @@ def targetNum(blobs_labels):
             return num
     return 0
 
+
 def padding_square(img):
     """
     :type img: ndarray
@@ -54,6 +57,7 @@ def padding_square(img):
     img = skimage.util.pad(img, padding, 'constant', constant_values=0)
     return img
 
+
 def padding_32(img):
     """
     :type img: ndarray
@@ -63,6 +67,7 @@ def padding_32(img):
     padding = ((2, 2), (2, 2))
     img = skimage.util.pad(img, padding, 'constant', constant_values=0)
     return img
+
 
 def isBar(img, rect):
     treshold1 = 0.5
@@ -77,6 +82,7 @@ def isBar(img, rect):
     ratio = rect[2] / rect[3]
     return usage > treshold1 or ratio > treshold2
 
+
 def overlap(bars_rect, i, j):
     r1 = bars_rect[i]
     r2 = bars_rect[j]
@@ -88,6 +94,7 @@ def overlap(bars_rect, i, j):
     vert_overlap_rate = (
         temp_array[2] - temp_array[1]) / (temp_array[3] - temp_array[0])
     return vert_overlap_rate > 0.6
+
 
 def cropImg(im_temp2, new_rect):
     rect = new_rect
@@ -106,6 +113,7 @@ def cropImg(im_temp2, new_rect):
     cropped_imgs.append(im_temp2)
     cropped_rects.append([rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3]])
 
+
 def img_combine(img1, img2, r1, r2, base_rect):
     w = base_rect[2]
     h = base_rect[3]
@@ -121,6 +129,7 @@ def img_combine(img1, img2, r1, r2, base_rect):
         r2[1], h - r2[3] - r2[1]), (r2[0], w - r2[2] - r2[0])), 'constant', constant_values=0)
     new_im = ((img1 + img2) > 0) * 1
     return new_im
+
 
 def process(image_path):
     im_gray = cv2.imread(image_path, 0)
@@ -181,9 +190,9 @@ def process(image_path):
     for i in range(0, len(bars_rect)):
         rect = bars_rect[i]
         cropImg(bars_im[i], rect)
-    # cv2.rectangle(im, (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (0, 255, 0), 3)
-    #
-    # im = 255 - im
-    # cv2.imwrite('out.png', im)
+        cv2.rectangle(im, (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (0, 255, 0), 3)
+
+        im = 255 - im
+        cv2.imwrite(f'output{i}.png', im)
 
     return cropped_imgs, cropped_rects
