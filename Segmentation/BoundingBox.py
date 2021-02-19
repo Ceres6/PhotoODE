@@ -13,9 +13,13 @@ import os
 from scipy.ndimage.measurements import label
 
 
-def x_division(img, img_inv, x_projection, x_labeled, x_ncomponents, debug=False):
+def x_division(img, x_projection, x_labeled, x_ncomponents):
     """Function that divides an image into vertical components"""
-    crop_imgs = []
+    # Array of segmented images
+    crop_imgs = [None] * x_ncomponents
+    # Array of level of sub/superscript
+    levels = [None] * x_ncomponents
+    levels[0] = 0
     if debug:
         print('performing vertical division')
         # Axes for cropped images
@@ -26,25 +30,63 @@ def x_division(img, img_inv, x_projection, x_labeled, x_ncomponents, debug=False
         else:
             cols = int(cols) + 1
         fig, axs = plt.subplots(rows, cols)
+        
     
-    for idx in range(x_ncomponents):
+    for idx in range(x_ncomponents):            
         x, y = np.argmax(x_labeled == idx + 1), 0
         w, h = np.count_nonzero(x_labeled == idx + 1), img.shape[0]
         crop_img = cv.copyMakeBorder(img[y:y+h, x:x+w], 0, 0, pad[2], pad[3],
                                      cv.BORDER_CONSTANT, value=255)
-        crop_imgs.append(crop_img)
+        
+        _, img_inv = cv.threshold(crop_img, 80, 255, cv.THRESH_BINARY_INV)
+        M = cv.moments(img_inv)
+        cy = int(M['m01']/M['m00']) 
+        if debug:
+            print(f'centroid of element {idx} is: {cy}')
+        
+        
+
+        if idx > 0:
+            if cy0 - cy > diff_min:
+                levels[idx] = levels[idx-1] + 1
+                if debug:
+                    print("level up")
+                    print(f'current level: {levels[idx]}')
+            elif cy - cy0 > diff_max:
+                levels[idx] = levels[idx-1] - 1
+                if debug:
+                    print("level down")
+                    print(f'current level: {levels[idx]}')
+            else:
+                levels[idx] = levels[idx-1]
+                if debug:
+                    print('same level')
+                    print(f'current level: {levels[idx]}')
+        
+        # References for next component to compare levels
+        if idx < x_ncomponents - 1:
+            cy0 = cy
+            # Find highest black pixel
+            y_min = np.min(np.where(np.amax(img_inv, axis=1)))
+            y_max = np.max(np.where(np.amax(img_inv, axis=1)))
+            diff_min = cy0 - y_min
+            diff_max = y_max - cy0
+            
+        crop_imgs[idx] = crop_img
+        
         if debug:
             if rows > 1:
-                axs[int(idx / cols)][idx % cols].imshow(crop_imgs[-1], cmap='gray')
+                axs[int(idx / cols)][idx % cols].imshow(crop_imgs[idx], cmap='gray')
             else:
-                axs[idx].imshow(crop_imgs[-1], cmap='gray')
-    
-    return crop_imgs
+                axs[idx].imshow(crop_imgs[idx], cmap='gray')
+
+    return (('x', levels), crop_imgs)
 
 
-def y_division(img, img_inv, y_projection,y_labeled, y_ncomponents, debug=False):
+def y_division(img, y_projection,y_labeled, y_ncomponents):
     """Function that divides an image into horizontal components"""
-    crop_imgs = []
+    print(f'y_ncomponents: {y_ncomponents}')
+    crop_imgs = [None] * y_ncomponents
     if debug:
         print('performing horizontal division')
         # Axes for cropped images
@@ -61,23 +103,21 @@ def y_division(img, img_inv, y_projection,y_labeled, y_ncomponents, debug=False)
         w, h = img.shape[1], np.count_nonzero(y_labeled == idx + 1)
         crop_img = cv.copyMakeBorder(img[y:y+h, x:x+w], pad[0], pad[1], 0, 0,
                                      cv.BORDER_CONSTANT, value=255)
-        # print(f'appending image of size {crop_img.shape}')
-        crop_imgs.append(crop_img)
+
+        crop_imgs[idx] = crop_img
+        
         if debug:
             if rows > 1:
-                axs[int(idx / cols)][idx % cols].imshow(crop_imgs[-1], cmap='gray')
+                axs[int(idx / cols)][idx % cols].imshow(crop_imgs[idx], cmap='gray')
             else:
-                axs[idx].imshow(crop_imgs[-1], cmap='gray')
+                axs[idx].imshow(crop_imgs[idx], cmap='gray')
                 
-    return crop_imgs
+    return (('y',), crop_imgs)
 
-def root_removal(img, img_inv, debug=False):
+def root_removal(img, img_inv):
     """Function that splits radical from radicand"""
-    crop_imgs = []
     if debug:
         print('performing radical-radican split')
-        
-    _, img_inv = cv.threshold(img, 80, 255, cv.THRESH_BINARY_INV)
     
     # Expect different returns depending on OpenCV version
     if int(cv.__version__.split('.')[0]) < 4:
@@ -116,11 +156,10 @@ def root_removal(img, img_inv, debug=False):
             cv.drawContours(im2, contours, i, (100, 100, 100), 1)
         crop_imgs = [im2]
     
-    return crop_imgs
+    return (('r',), crop_imgs)
     
-def division_step(img, debug=False):
+def division_step(img):
     """Function that controls the flow of image division"""
-    crop_imgs = []
     _, img_inv = cv.threshold(img, 80, 255, cv.THRESH_BINARY_INV)
     # array to append cropped images
     
@@ -133,8 +172,7 @@ def division_step(img, debug=False):
     
             
     if x_ncomponents > 1:
-        crop_imgs.extend(x_division(img, img_inv, x_projection, x_labeled, 
-                                       x_ncomponents, debug=debug))
+        return x_division(img, x_projection, x_labeled, x_ncomponents)
     else:
         # Get projection over y axis
         y_projection = np.matrix(np.amax(img_inv, axis=1)).transpose()
@@ -144,15 +182,11 @@ def division_step(img, debug=False):
         
         if y_ncomponents > 1:
             
-            crop_imgs.extend(y_division(img, img_inv, y_projection, y_labeled, 
-                                        y_ncomponents, debug=debug))
+            return y_division(img, y_projection, y_labeled, y_ncomponents)
             
         else:
-            crop_imgs.extend(root_removal(img, img_inv, debug=debug))
+            return root_removal(img, img_inv)
             
-            
-    return crop_imgs       
-    #for idx, image in enumerate() 
     
 def show_image(im, title):
     # axes for debugging purposes
@@ -162,8 +196,14 @@ def show_image(im, title):
     
 # Define global padding
 pad = [3] * 4  # [top, bottom, left, right]
-    
+
+
+
 if __name__ == '__main__':
+    
+    # Debug mode flag
+    debug = True
+    
     file_path = pathlib.Path(__file__)
     img_dir = file_path.parents[1] / 'dataset' / 'segmentation'
     saving_dir = file_path.parents[0] / 'segmented'
@@ -184,7 +224,9 @@ if __name__ == '__main__':
 
         imgs = [
                 [
-                    [1],
+                    [
+                        ('b',)
+                    ],
                     [img]
                 ]
             ]
@@ -216,11 +258,11 @@ if __name__ == '__main__':
                     continue_division = True 
                     show_image(im2, f'division of order {len(imgs) - 1} of picture {idx}')
                     
-                    new_img = division_step(im, debug=True)
-                    imgs[-1][0].append(len(new_img))
-                    imgs[-1][1].extend(new_img) 
+                    division_results = division_step(im)
+                    imgs[-1][0].append(division_results[0])                        
+                    imgs[-1][1].extend(division_results[1]) 
                 else:
                     print('just one contour detected')
-                    imgs[-1][0].append(1)
+                    imgs[-1][0].append(('n',))
                     imgs[-1][1].append(im)
         
