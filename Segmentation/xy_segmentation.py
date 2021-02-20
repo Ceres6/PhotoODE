@@ -13,7 +13,8 @@ import os
 from scipy.ndimage.measurements import label
 
 
-def x_division(img, x_projection, x_labeled, x_ncomponents):
+def _x_division(img, x_projection, x_labeled, x_ncomponents, *, pad=[3] * 4,
+               debug=False):
     """Function that divides an image into vertical components"""
     # Array of segmented images
     crop_imgs = [None] * x_ncomponents
@@ -76,14 +77,16 @@ def x_division(img, x_projection, x_labeled, x_ncomponents):
         
         if debug:
             if rows > 1:
-                axs[int(idx / cols)][idx % cols].imshow(crop_imgs[idx], cmap='gray')
+                axs[int(idx / cols)][idx % cols].imshow(crop_imgs[idx], 
+                                                        cmap='gray')
             else:
                 axs[idx].imshow(crop_imgs[idx], cmap='gray')
 
     return (('x', levels), crop_imgs)
 
 
-def y_division(img, y_projection,y_labeled, y_ncomponents):
+def _y_division(img, y_projection,y_labeled, y_ncomponents, *, pad=[3] * 4,
+               debug=False):
     """Function that divides an image into horizontal components"""
     print(f'y_ncomponents: {y_ncomponents}')
     crop_imgs = [None] * y_ncomponents
@@ -114,7 +117,7 @@ def y_division(img, y_projection,y_labeled, y_ncomponents):
                 
     return (('y',), crop_imgs)
 
-def root_removal(img, img_inv):
+def _root_removal(img, img_inv, *, debug=False):
     """Function that splits radical from radicand"""
     if debug:
         print('performing radical-radican split')
@@ -158,21 +161,23 @@ def root_removal(img, img_inv):
     
     return (('r',), crop_imgs)
     
-def division_step(img):
+def _division_step(img, *, pad=[3] * 4, debug=False):
     """Function that controls the flow of image division"""
     _, img_inv = cv.threshold(img, 80, 255, cv.THRESH_BINARY_INV)
     # array to append cropped images
-    
+    print(f"division step debug is {debug}")
     
     # Get projection over x axis
     x_projection = np.matrix(np.amax(img_inv, axis=0))
     
     # Get all connected components in the projection
+    structure = np.ones((3,3), dtype='uint8')
     x_labeled, x_ncomponents = label(x_projection, structure)   
     
             
     if x_ncomponents > 1:
-        return x_division(img, x_projection, x_labeled, x_ncomponents)
+        return _x_division(img, x_projection, x_labeled, x_ncomponents, pad=pad,
+                          debug=debug)
     else:
         # Get projection over y axis
         y_projection = np.matrix(np.amax(img_inv, axis=1)).transpose()
@@ -182,87 +187,89 @@ def division_step(img):
         
         if y_ncomponents > 1:
             
-            return y_division(img, y_projection, y_labeled, y_ncomponents)
+            return _y_division(img, y_projection, y_labeled, y_ncomponents, 
+                              pad=pad, debug=debug)
             
         else:
-            return root_removal(img, img_inv)
+            return _root_removal(img, img_inv, debug=debug)
             
     
-def show_image(im, title):
+def _show_image(im, title):
     # axes for debugging purposes
     fig, ax = plt.subplots()
     ax.set_title(title)
     ax.imshow(im, cmap='gray')
     
-# Define global padding
-pad = [3] * 4  # [top, bottom, left, right]
 
+def xy_segmentation(img_path, *, pad=[3] * 4, debug=False):
+    continue_division = True
+    img = cv.imread(str(img_path), 0)
+    # Apply padding 
+    img = cv.copyMakeBorder(img, *pad, cv.BORDER_CONSTANT, value=255)
+    
+    # Prepare image and negative in grayscale
+    _, img = cv.threshold(img, 230, 255, cv.THRESH_BINARY)
 
+    imgs = [
+            [
+                [
+                    ('b',)
+                ],
+                [img]
+            ]
+        ]
+        
+    while continue_division and len(imgs) < 4:
+        # flag to determine whether the division is complete or not
+        continue_division = False
+        # Add new component to image list
+        imgs.append([[],[]])
+        for idx, im in enumerate(imgs[-2][1]):
+            print(f'starting division of order {len(imgs) - 1} of picture {idx}')
+            try:
+                # Expect different returns depending on OpenCV version
+                if int(cv.__version__.split('.')[0]) < 4:
+                    _, contours, _ = cv.findContours(im, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)   
+                else:
+                    contours, _ = cv.findContours(im, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+            except TypeError as error:
+                print('Conflicting image is:')
+                print(im)
+                raise TypeError(error)
+            # If there is more than one contour, division can still happen
+            if len(contours) > 2:
+                print(f'detected {len(contours) - 1} contours')
+                im2 = im.copy()
+                for i, _ in enumerate(contours):
+                    cv.drawContours(im2, contours, i, (100, 100, 100), 1)
+                continue_division = True 
+                _show_image(im2, f'division of order {len(imgs) - 1} of picture {idx}')
+                
+                division_results = _division_step(im, pad=pad, debug=debug)
+                imgs[-1][0].append(division_results[0])                        
+                imgs[-1][1].extend(division_results[1]) 
+            else:
+                print('just one contour detected')
+                imgs[-1][0].append(('n',))
+                imgs[-1][1].append(im)
+    return imgs
 
 if __name__ == '__main__':
     
-    # Debug mode flag
     debug = True
-    
+    pad = [3] * 4  # [top, bottom, left, right]
     file_path = pathlib.Path(__file__)
     img_dir = file_path.parents[1] / 'dataset' / 'segmentation'
+    
+    """
     saving_dir = file_path.parents[0] / 'segmented'
     # Erase previous contents of the directory
-    structure = np.ones((3,3), dtype='uint8')
     
     for file_path in saving_dir.iterdir():
         os.unlink(file_path) 
+    """
     # Find all images to segment
     for img_path in img_dir.iterdir():
-        continue_division = True
-        img = cv.imread(str(img_path), 0)
-        # Apply padding 
-        img = cv.copyMakeBorder(img, *pad, cv.BORDER_CONSTANT, value=255)
-        
-        # Prepare image and negative in grayscale
-        _, img = cv.threshold(img, 230, 255, cv.THRESH_BINARY)
-
-        imgs = [
-                [
-                    [
-                        ('b',)
-                    ],
-                    [img]
-                ]
-            ]
-            
-        while continue_division and len(imgs) < 4:
-            # flag to determine whether the division is complete or not
-            continue_division = False
-            # Add new component to image list
-            imgs.append([[],[]])
-            for idx, im in enumerate(imgs[-2][1]):
-                print(f'starting division of order {len(imgs) - 1} of picture {idx}')
-                try:
-                    # Expect different returns depending on OpenCV version
-                    if int(cv.__version__.split('.')[0]) < 4:
-                        _, contours, _ = cv.findContours(im, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)   
-                    else:
-                        contours, _ = cv.findContours(im, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-
-                except TypeError as error:
-                    print('Conflicting image is:')
-                    print(im)
-                    raise TypeError(error)
-                # If there is more than one contour, division can still happen
-                if len(contours) > 2:
-                    print(f'detected {len(contours) - 1} contours')
-                    im2 = im.copy()
-                    for i, _ in enumerate(contours):
-                        cv.drawContours(im2, contours, i, (100, 100, 100), 1)
-                    continue_division = True 
-                    show_image(im2, f'division of order {len(imgs) - 1} of picture {idx}')
-                    
-                    division_results = division_step(im)
-                    imgs[-1][0].append(division_results[0])                        
-                    imgs[-1][1].extend(division_results[1]) 
-                else:
-                    print('just one contour detected')
-                    imgs[-1][0].append(('n',))
-                    imgs[-1][1].append(im)
-        
+        segmentation_results = xy_segmentation(img_path, pad=pad, 
+                                               debug=debug)
