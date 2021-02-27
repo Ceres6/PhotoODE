@@ -1,2 +1,3 @@
 /dataset/Classification
 /dataset/Segmentation
+*.pyc
