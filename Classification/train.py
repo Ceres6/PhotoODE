@@ -4,11 +4,12 @@ import matplotlib.pyplot as plt
 
 import pathlib
 
-from LeNet import LeNet
+from lenet import LeNet
 
 # to run file: python ./Classification/train.py
 
 
+# TODO: remove
 def train_test_plt(fitted_model):
     fig = plt.figure(figsize=(15, 5))
     fig.add_subplot(1, 2, 1)
@@ -31,6 +32,7 @@ def train_test_plt(fitted_model):
     fig.subplots_adjust(wspace=0.2, hspace=1)
 
 
+# TODO: remove
 def accuracy_metrics(instance):
     # Calculate probability of each class for each image in test set
     y_pred = instance.model.predict(lenet.test_set[0], batch_size=32, verbose=1)
@@ -46,6 +48,7 @@ def accuracy_metrics(instance):
     print('Kappa de Cohen: ', cohen_kappa_score(y_true, y_pred_max))
 
 
+# TODO: remove
 def create_label_dict(classification_dir):
     lab_dict = {}
     for index, subdir in enumerate(classification_dir.iterdir()):
