@@ -3,6 +3,7 @@ import pathlib
 import sys
 from datetime import datetime
 from typing import Dict
+import json
 
 import numpy as np
 import cv2 as cv
@@ -91,3 +92,6 @@ np.savez_compressed(base_dir / 'dataset' / f"classification_set_{date_string}.np
                     database=array_of_images, label=label_array)
 
 # TODO: store label_dict automatically
+label_dir = pathlib.Path(__file__).parents[1] / 'dataset'
+with open(label_dir / f"label_dict_{date_string}.txt", 'w') as f:
+    f.write(json.dumps(label_dict, indent=2))

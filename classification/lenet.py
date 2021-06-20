@@ -1,13 +1,13 @@
 import json
 from datetime import datetime
-import pathlib
-import os
 
 import keras
 from keras.layers import Input, Conv2D, Activation, AvgPool2D, Dense, Flatten
 from keras.optimizers import Adam, SGD
-from keras.utils import to_categorical
-from keras.callbacks import History
+try:
+    from keras.utils import to_categorical
+except ImportError:
+    from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, cohen_kappa_score, confusion_matrix
 
@@ -26,10 +26,10 @@ class LeNet:
     def __init__(self, labels, activation='relu', optimizer='adam', lr=0.0001,
                  loss='categorical_crossentropy', input_shape=32):
         self.input_shape = input_shape
-        self.optimizer = Adam(lr=lr)
+        self.optimizer = Adam(learning_rate=lr)
         if optimizer != 'adam':
             if optimizer == 'sgd':
-                self.optimizer = SGD(lr=lr)
+                self.optimizer = SGD(learning_rate=lr)
             else:
                 print(f'optimizer: {optimizer} not registered, using default: adam')
 
@@ -83,7 +83,7 @@ class LeNet:
                 file.write(accuracy)
                 file.write(f'Cohen Kappa score : {cohen_kappa}')
         if weights_dir:
-            self.save_weights(f"{weights_dir}/loss_history_lenet_{data_string}.h5", save_format='h5')
+            self.save_weights(f"{weights_dir}/lenet_weights_{data_string}.h5", save_format='h5')
 
     def save_weights(self, file_path, *, save_format='h5'):
         self.model.save_weights(file_path, save_format=save_format)
@@ -128,7 +128,3 @@ class LeNet:
         plt.legend(['Test', 'Train'], loc='upper left')
 
         fig.subplots_adjust(wspace=0.2, hspace=1)
-
-
-if __name__ == '__main__':
-    print('just testing')
