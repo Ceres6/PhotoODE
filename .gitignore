@@ -2,6 +2,7 @@
 /dataset/nist_by_class
 /dataset/segmentation
 Playground.py
+.idea
 */*.zip
 *.zip
 *.pyc
