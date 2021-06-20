@@ -1,4 +1,7 @@
 /dataset/crohme_by_class
+/dataset/nist_by_class
 /dataset/segmentation
 Playground.py
+*/*.zip
+*.zip
 *.pyc
