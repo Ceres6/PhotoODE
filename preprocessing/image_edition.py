@@ -2,32 +2,35 @@ import cv2 as cv
 import numpy as np
 from scipy import ndimage
 
+from photoode.utils.utils import show_image
 
-from utils.utils import show_image
 
-def bounding_square(obj):
-    x = obj[1].start
-    y = obj[0].start
-    w = obj[1].stop - obj[1].start
-    h = obj[0].stop - obj[0].start
-    return (x, y, w, h)
+def bounding_square(objs):
+    x = min([obj[1].start for obj in objs])
+    x_stop = max([obj[1].stop for obj in objs])
+    w = x_stop - x
+    y = min([obj[0].start for obj in objs])
+    y_stop = max([obj[0].stop for obj in objs])
+    h = y_stop - y
+    return x, y, w, h
+
 
 def image_to_square(img, *, pad=[1]*4, debug=False):
     """Fucntion to broadcast an image into a white-background square"""
     
     _, img_inv = cv.threshold(img, 80, 255, cv.THRESH_BINARY_INV)
     
-    structure = np.ones((3,3), dtype='uint8')
+    structure = np.ones((3, 3), dtype='uint8')
     img_labeled, img_ncomponents = ndimage.label(img_inv, structure) 
     
-    try:
-        assert(img_ncomponents == 1)
-    except AssertionError:
-        print(f"There are too many components: {img_ncomponents}")
-        return
+    # try:
+    #     assert(img_ncomponents == 1)
+    # except AssertionError:
+    #     print(f"There are too many components: {img_ncomponents}")
+    #     return
         
-    objs = ndimage.find_objects(img_labeled)    
-    x, y, w, h = bounding_square(objs[0])
+    objs = ndimage.find_objects(img_labeled)
+    x, y, w, h = bounding_square(objs)
     
     if w < h:
         crop_img = cv.copyMakeBorder(img[y:y+h, x:x+w], pad[0], pad[1], 0, 0,
@@ -57,12 +60,13 @@ def image_to_square(img, *, pad=[1]*4, debug=False):
     
     return square
 
+
 def resize_threshold(image, size, *, debug=False):
     
     img = cv.resize(image, size, interpolation=cv.INTER_LANCZOS4)
  
     threshold_values = (80, 100, 150, 180, 200, 215, 230)
-    structure = np.ones((3,3), dtype='uint8')
+    structure = np.ones((3, 3), dtype='uint8')
     for threshold in threshold_values:
         _, img_inv = cv.threshold(img, threshold, 255, cv.THRESH_BINARY_INV)   
         _, ncomponents = ndimage.label(img_inv, structure)   
