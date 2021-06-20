@@ -1,3 +1,4 @@
-/dataset/Classification
-/dataset/Segmentation
+/dataset/crohme_by_class
+/dataset/segmentation
+Playground.py
 *.pyc
