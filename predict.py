@@ -1,31 +1,29 @@
 import pathlib
 import sys
-import cv2 as cv
+from operator import itemgetter
+from copy import deepcopy
+import logging
+
 import numpy as np
 
 base_dir = pathlib.Path(__file__).parents[0]
-sys.path.append(str(pathlib.Path(__file__).parents[0]))
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-from utils.utils import show_image
-from segmentation.xy_segmentation import xy_segmentation
-from preprocessing.image_edition import bounding_square, resize_threshold
-from classification.LeNet import LeNet
+from photoode.segmentation.xy_segmentation import xy_segmentation
+from photoode.preprocessing.image_edition import image_to_square, resize_threshold
+from photoode.classification.lenet import LeNet
+from photoode.classification.label_dict import label_dict
+from photoode.parser.parser import parse
 
 # To run: python predict.py
 if __name__ == '__main__':
-    
-    debug = True
+    logging.basicConfig(level=logging.DEBUG)  # select logging level
+    debug = False
     pad = [3] * 4  # [top, bottom, left, right]
     
     # Model instantiation and loading
-    labels = [
-        '(', ')', '+', ',', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', 
-        '9', 'A', 'alpha', 'b', 'beta', 'C', 'cos', 'd', 'Delta', 'e', 'f', 
-        'forward_slash', 'G', 'gamma', 'H', 'i', 'j', 'k', 'l', 'lambda', 
-        'log', 'M', 'mu', 'N', 'o', 'p', 'phi', 'pi', 'q', 'R', 'S', 'sigma', 
-        'sin', 'sqrt', 'T', 'tan', 'theta', 'u', 'v', 'w', 'X', 'y', 'z', '[',
-        ']'
-        ]
+    labels = list(label_dict.values())
+    logging.debug(f"length of labels {len(labels)}")
     lenet = LeNet(labels)
     weights_dir = base_dir / 'classification' / 'weights'
     weights_file = sorted([path for path in weights_dir.iterdir()])[-1]
@@ -39,21 +37,35 @@ if __name__ == '__main__':
     
     # Find all images to segment
     for img_path in img_dir.iterdir():
-        # TODO: check if it's image file
         if img_path.is_dir():
             continue
-        print(f"image path: {img_path}")
+        # print(f"image path: {img_path}")
         segmentation_results = xy_segmentation(img_path, pad=pad, debug=debug)
-        img = segmentation_results[-1][1][-1]
-        img = bounding_square(img, debug=False)
-        img = resize_threshold(img, input_shape)
-        segmentation_results[-1][1][-1] = img
-        
-        cv.imwrite(f"{save_dir}/seg.png", img)
-        img = img[np.newaxis, :, :, np.newaxis]
-        prediction = lenet.predict(img)
-            
-        print(prediction)
+        # Deepcopy of segmentation results to store predictions and parse LaTeX
+        equation_structure = deepcopy(segmentation_results)
+        predictions_prob = [None] * len(segmentation_results[-1][1])
+        # TODO: Change double loop with itertools
+        for group_index, image_group in enumerate(segmentation_results[-1][1]):
+            for img_idx, img in enumerate(image_group):
+
+                squared_img = image_to_square(img)
+                resized_img = resize_threshold(squared_img, input_shape)
+
+                # segmentation_results[-1][1][-1] = img
+
+                # cv.imwrite(f"{save_dir}/seg.png", img)
+                input_img = resized_img[np.newaxis, :, :, np.newaxis]
+                prediction_array = lenet.predict(input_img)
+                prediction_list = [[None, prob] for prob in prediction_array.tolist()[0]]
+                for index, row in enumerate(prediction_list):
+                    row[0] = labels[index]
+                # sorted by precision
+                prediction = sorted(prediction_list, key=itemgetter(1))[-1]
+                equation_structure[-1][1][group_index][img_idx] = prediction[0]
+        logging.debug(f"prediction array: {equation_structure[-1]}")
+        latex_expression = parse(equation_structure)
+        print(latex_expression)
+        # print(prediction)
         """
         for idx, img in enumerate(segmentation_results[-1][1]):
             segmentation_results[-1][1][idx] = bounding_square(img)"""
