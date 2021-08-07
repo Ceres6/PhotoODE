@@ -3,6 +3,8 @@
 /dataset/segmentation
 Playground.py
 .idea
-*/*.zip
 *.zip
+*/*.zip
 *.pyc
+*/*.pyc
+*/*/*.pyc
