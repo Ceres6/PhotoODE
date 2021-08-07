@@ -15,4 +15,4 @@ def check_list_types(checked_list: List, checked_type: Any) -> bool:
     """Checks if all the elements of a list are of the specified type"""
     if not isinstance(checked_list, list):
         return False
-    return all(isinstance(checked_list, checked_type))
+    return all(isinstance(checked_list_element, checked_type) for checked_list_element in checked_list)
