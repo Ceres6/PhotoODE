@@ -6,15 +6,135 @@ Created on Thu Jan 14 18:43:19 2021
 """
 
 import pathlib
+from enum import IntEnum
+from typing import List, Union
+import logging
 
 import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage.measurements import label
 
-from photoode.utils.utils import show_image
+from utils.utils import show_image, check_list_types
 
 # TODO: import logging and change debug variable to loglevel
+
+
+class SegmentationOperation(IntEnum):
+    BEGINNING = 0
+    X_SEGMENTATION = 1
+    Y_SEGMENTATION = 2
+    ROOT_REMOVAL = 3
+
+
+class SegmentedImageArray:
+    def __init__(self, images: Union[List[np.ndarray], np.ndarray, None] = None):
+        if isinstance(images, list):
+            self.__image_array: List[np.ndarray] = images
+        elif isinstance(images, np.ndarray):
+            self.__image_array = list(images)
+        elif isinstance((images, None)):
+            self.__image_array = list()
+        else:
+            raise TypeError('images arg must be List[np.ndarray], np.ndarray or  None')
+
+    @property
+    def image_array(self):
+        return self.__image_array
+
+    @image_array.setter
+    def image_array(self, new_value: Union[List[np.ndarray], np.ndarray, None]):
+        if isinstance(new_value, list):
+            self.__image_array: List[np.ndarray] = new_value
+        elif isinstance(new_value, np.ndarray):
+            self.__image_array = list(new_value)
+        elif isinstance((new_value, None)):
+            self.__image_array = list()
+        else:
+            raise TypeError('images arg must be List[np.ndarray], np.ndarray or  None')
+
+    def add_image(self, new_image: np.ndarray):
+        self.__image_array.append(new_image)
+
+
+class SegmentationGroup:
+    def __init__(self, segmentation_operation: SegmentationOperation = SegmentationOperation.BEGINNING,
+                 segmented_images: SegmentedImageArray = SegmentedImageArray()):
+        if not isinstance(segmentation_operation, SegmentationOperation):
+            raise TypeError('segmentation_operation arg must be of type SegmentationOperation')
+        if not isinstance(segmented_images, SegmentedImageArray):
+            raise TypeError('segmented_images arg must be of type SegmentedImageArray')
+        self.__segmentation_operation: SegmentationOperation = segmentation_operation
+        self.__segmented_images: SegmentedImageArray = segmented_images
+
+    @property
+    def segmentation_operation(self):
+        return self.__segmentation_operation
+
+    @property
+    def segmented_images(self):
+        return self.__segmented_images.image_array
+
+    @segmentation_operation.setter
+    def segmentation_operation(self, new_value: SegmentationOperation):
+        if not isinstance(new_value, SegmentationOperation):
+            raise TypeError('new_value arg must be of type SegmentationOperation')
+        self.__segmentation_operation = new_value
+
+    @segmented_images.setter
+    def segmented_images(self, new_value: SegmentedImageArray.image_array):
+        if not isinstance(new_value, SegmentedImageArray):
+            raise TypeError('new_value arg must be of type SegmentedImageArray')
+        self.__segmented_images.image_array = new_value
+
+
+class SegmentationLevel:
+    def __init__(self, segmentation_groups: Union[List[SegmentationGroup], SegmentationGroup] = SegmentationGroup()):
+        if check_list_types(segmentation_groups, SegmentationGroup):
+            self.__segmentation_groups: List[SegmentationGroup] = segmentation_groups
+        elif isinstance(segmentation_groups, SegmentationGroup):
+            self.__segmentation_groups = list(segmentation_groups)
+        else:
+            raise TypeError('segmentation_groups arg must be of type SegmentationGroup')
+
+    @property
+    def segmentation_groups(self):
+        return self.__segmentation_groups
+
+    @segmentation_groups.setter
+    def segmentation_groups(self, new_value: List[SegmentationGroup]):
+        if check_list_types(new_value, SegmentationGroup):
+            self.__segmentation_groups: List[SegmentationGroup] = new_value
+        elif isinstance(new_value, SegmentationGroup):
+            self.__segmentation_groups = list(new_value)
+        else:
+            raise TypeError('new_value arg must be of type SegmentationGroup')
+
+
+# class SegmentationResults:
+#     def __init__(self):
+#         self.__segmentation_levels: List[SegmentationLevel] = list()
+#
+#     @property
+#     def segmentation_levels(self):
+#         return self.__segmentation_levels
+#
+#     @segmentation_levels.setter
+#     def segmentation_levels(self, new_value: List[SegmentationLevel]):
+#         self.__segmentation_levels = new_value
+
+
+class XYSegmenter:
+    def __init__(self, image: np.ndarray):
+        self.__segmentation_levels: List[SegmentationLevel] = list()
+        image_array = SegmentedImageArray()
+
+    @property
+    def segmentation_levels(self):
+        return self.__segmentation_levels
+
+    def add_level(self, new_level: SegmentationLevel):
+        self.__segmentation_levels.append(new_level)
 
 
 def _x_division(img, x_projection, x_labeled, x_ncomponents, *, pad=[3] * 4,
@@ -205,6 +325,7 @@ def xy_segmentation(img_path, *, pad=[3] * 4, debug=False):
     """
     continue_division = True
     img = cv.imread(str(img_path), 0)
+    print(type(img))
     # Apply padding 
     img = cv.copyMakeBorder(img, *pad, cv.BORDER_CONSTANT, value=255)
 
