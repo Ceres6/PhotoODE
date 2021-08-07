@@ -1,19 +1,20 @@
 import pathlib
-import sys
+import json
 from operator import itemgetter
 from copy import deepcopy
 import logging
 
 import numpy as np
+from typing import List
 
-base_dir = pathlib.Path(__file__).parents[0]
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
+# base_dir = pathlib.Path(__file__).parents[0]
+# sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-from photoode.segmentation.xy_segmentation import xy_segmentation
-from photoode.preprocessing.image_edition import image_to_square, resize_threshold
-from photoode.classification.lenet import LeNet
-from photoode.classification.label_dict import label_dict
-from photoode.parser.parser import parse
+from segmentation.xy_segmentation import xy_segmentation
+from preprocessing.image_edition import image_to_square, resize_threshold
+from classification.lenet import LeNet
+# from classification.label_dict import label_dict
+# from parser.parser import parse
 
 # To run: python predict.py
 if __name__ == '__main__':
@@ -22,7 +23,14 @@ if __name__ == '__main__':
     pad = [3] * 4  # [top, bottom, left, right]
     
     # Model instantiation and loading
-    labels = list(label_dict.values())
+    base_dir = pathlib.Path(__file__).parents[0]
+    dataset_dir = base_dir / 'dataset'
+    # print(list(dataset_dir.iterdir()))
+
+    with open([str(file) for file in dataset_dir.iterdir() if 'label_dict' in str(file)][0], "r") as f:
+        labels = list(json.loads(f.read()).values())
+        print(labels)
+    # labels = list(label_dict.values())
     logging.debug(f"length of labels {len(labels)}")
     lenet = LeNet(labels)
     weights_dir = base_dir / 'classification' / 'weights'
@@ -63,8 +71,8 @@ if __name__ == '__main__':
                 prediction = sorted(prediction_list, key=itemgetter(1))[-1]
                 equation_structure[-1][1][group_index][img_idx] = prediction[0]
         logging.debug(f"prediction array: {equation_structure[-1]}")
-        latex_expression = parse(equation_structure)
-        print(latex_expression)
+        # latex_expression = parse(equation_structure)
+        # print(latex_expression)
         # print(prediction)
         """
         for idx, img in enumerate(segmentation_results[-1][1]):
