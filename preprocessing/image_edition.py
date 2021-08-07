@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 from scipy import ndimage
 
-from photoode.utils.utils import show_image
+from utils.utils import show_image
 
 
 def bounding_square(objs):
