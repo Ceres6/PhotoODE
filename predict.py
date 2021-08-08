@@ -6,15 +6,14 @@ import logging
 
 import numpy as np
 from typing import List
-
 # base_dir = pathlib.Path(__file__).parents[0]
 # sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-
+from parser import parser
 from segmentation.xy_segmentation import xy_segmentation
 from preprocessing.image_edition import image_to_square, resize_threshold
 from classification.lenet import LeNet
 # from classification.label_dict import label_dict
-# from parser.parser import parse
+from parser.parser import XYParser
 
 # To run: python predict.py
 if __name__ == '__main__':
@@ -47,10 +46,9 @@ if __name__ == '__main__':
         # Deepcopy of segmentation results to store predictions and parse LaTeX
         # equation_structure = deepcopy(segmentation_results)
         # predictions_prob = [None] * len(segmentation_results.last_level)
-        # TODO: Change double loop with itertools
+        # TODO: Move array prediction to classifier
         predictions_results = []
         for group_index, image_group in enumerate(segmentation_results.last_level.segmentation_groups):
-            predictions_results.append([])
             for img_idx, img in enumerate(image_group.segmented_images):
 
                 squared_img = image_to_square(img)
@@ -66,10 +64,9 @@ if __name__ == '__main__':
                     row[0] = labels[index]
                 # sorted by precision
                 prediction = sorted(prediction_list, key=itemgetter(1))[-1]
-                predictions_results[-1].append(prediction[0])
-        print('results are:')
-        print(predictions_results)
-        # logging.debug(f"prediction array: {equation_structure[-1]}")
+                predictions_results.append(prediction[0])
+        logging.debug(f'results are: {predictions_results}')
+        latex_expression = XYParser(predictions_results, segmentation_results).last_level.parsed_groups
         # latex_expression = parse(equation_structure)
         # print(latex_expression)
         # print(prediction)
