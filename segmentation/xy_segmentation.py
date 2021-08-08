@@ -61,11 +61,13 @@ class SegmentationGroup:
 
 
 class SegmentationLevel:
-    def __init__(self, segmentation_groups: Union[List[SegmentationGroup], SegmentationGroup] = list()):
+    def __init__(self, segmentation_groups: Union[List[SegmentationGroup], SegmentationGroup] = None):
         if check_list_types(segmentation_groups, SegmentationGroup):
             self.__segmentation_groups: List[SegmentationGroup] = segmentation_groups
         elif isinstance(segmentation_groups, SegmentationGroup):
             self.__segmentation_groups = [segmentation_groups]
+        elif segmentation_groups is None:
+            self.__segmentation_groups = list()
         else:
             raise TypeError('segmentation_groups arg must be of type SegmentationGroup')
 
@@ -108,25 +110,34 @@ class XYSegmentationResults:
 
     @property
     def last_level(self) -> SegmentationLevel:
-        return self.segmentation_levels[-1]
+        return self.__segmentation_levels[-1]
+
+    @property
+    def previous_level(self) -> SegmentationLevel:
+        """Returns the previous level to the last one created"""
+        return self.__segmentation_levels[-2]
 
     @property
     def segmented_images(self):
         return [image for group in self.last_level.segmentation_groups for image in group.segmented_images]
 
-    def add_level(self, new_level: SegmentationLevel) -> None:
-        if isinstance(new_level, SegmentationLevel):
-            self.__segmentation_levels.append(new_level)
-        else:
+    def __add_level(self, new_level: SegmentationLevel) -> None:
+        if not isinstance(new_level, SegmentationLevel):
             raise TypeError('new_level arg must be of type SegmentationLevel')
+        self.__segmentation_levels.append(new_level)
 
     def __division_step(self):
         """method to produce the next segmentation level"""
-        self.add_level(SegmentationLevel())
-        for group_index, image_group in enumerate(self.segmentation_levels[-1].segmentation_groups):
+        self.__add_level(SegmentationLevel())
+        logging.debug(f'there are {len(self.last_level.segmentation_groups)} segmentation groups in new level')
+        if self.last_level is self.previous_level:
+            raise ValueError('same reference in distinct levels')
+        logging.debug(f'there are {len(self.previous_level.segmentation_groups)} segmentation groups')
+        for group_index, image_group in enumerate(self.previous_level.segmentation_groups):
+            logging.debug(f'there are {len(image_group.segmented_images)} images in group {group_index}')
             for image_index, image in enumerate(image_group.segmented_images):
-                logging.debug(
-                    f'starting division of order {len(self.segmentation_levels) - 1} of group {group_index} of picture {image_index}')
+                logging.debug(''.join((f'starting division of order {len(self.segmentation_levels) - 1}',
+                                       f' of picture {image_index} of group {group_index}')))
                 try:
                     # Expect different returns depending on OpenCV version
                     if int(cv.__version__.split('.')[0]) < 4:
@@ -148,11 +159,10 @@ class XYSegmentationResults:
                     if logging.root.level == logging.DEBUG:
                         show_image(im2,
                                    f'division of order {len(self.segmentation_levels) - 1} of picture {image_index}')
-
-                    self.segmentation_levels[-1].add_group(self.__segment_image(image))
+                    self.last_level.add_group(self.__segment_image(image))
                 else:
                     logging.debug('just one contour detected')
-                    self.segmentation_levels[-1].add_group(SegmentationGroup(SegmentationOperation.NONE, [image]))
+                    self.last_level.add_group(SegmentationGroup(SegmentationOperation.NONE, [image]))
 
     def __segment_image(self, img: np.ndarray) -> SegmentationGroup:
         _, img_inv = cv.threshold(img, 80, 255, cv.THRESH_BINARY_INV)
@@ -172,7 +182,7 @@ class XYSegmentationResults:
 
             if y_ncomponents > 1:
 
-                return self.__y_division(img, y_projection, y_labeled, y_ncomponents)
+                return self.__y_division(img, y_labeled, y_ncomponents)
 
             else:
                 return self.__root_removal(img, img_inv)
@@ -267,7 +277,7 @@ class XYSegmentationResults:
 
             segmented_images[idx] = cropped_image
 
-            if debug:
+            if logging.root.level == logging.DEBUG:
                 if rows > 1:
                     axs[int(idx / cols)][idx % cols].imshow(segmented_images[idx], cmap='gray')
                 else:
@@ -275,7 +285,7 @@ class XYSegmentationResults:
         return SegmentationGroup(SegmentationOperation.Y_SEGMENTATION, segmented_images)  # ('y',), segmented_images
 
     @staticmethod
-    def __root_removal(img, img_inv):
+    def __root_removal(img: np.ndarray, img_inv: np.ndarray) -> SegmentationGroup:
         """Function that splits radical from radicand"""
         logging.debug('performing radical-radicand split')
 
@@ -304,8 +314,8 @@ class XYSegmentationResults:
             radical[mask.astype(np.bool)] = 255
             radicand = cv.drawContours(img, contours, big_rect_idx, 255, cv.FILLED)
             segmented_images = [radical, radicand]
-            operation = SegmentationOperation.ROOT_REMOVAL # ('r',)
-            if debug:
+            operation = SegmentationOperation.ROOT_REMOVAL  # ('r',)
+            if logging.root.level == logging.DEBUG:
                 # Axes for cropped images
                 fig, axs = plt.subplots(2)
                 axs[0].imshow(radical, cmap='gray')
@@ -366,8 +376,8 @@ def xy_segmentation(image_path):
     return XYSegmentationResults(img)
 
 
-
 segmentation_padding = [3] * 4
+pad = segmentation_padding
 if __name__ == '__main__':
 
     debug = True
