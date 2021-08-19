@@ -18,7 +18,6 @@ from scipy.ndimage.measurements import label
 
 from utils.utils import show_image, check_list_types
 
-
 class SegmentationOperation(IntEnum):
     BEGINNING = 0
     X_SEGMENTATION = 1

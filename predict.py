@@ -5,15 +5,14 @@ from copy import deepcopy
 import logging
 
 import numpy as np
-from typing import List
+
 # base_dir = pathlib.Path(__file__).parents[0]
 # sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from parser import parser
+
 from segmentation.xy_segmentation import xy_segmentation
 from preprocessing.image_edition import image_to_square, resize_threshold
 from classification.lenet import LeNet
-# from classification.label_dict import label_dict
-from parser.parser import XYParser
+from parsing.parser import XYParser
 
 # To run: python predict.py
 if __name__ == '__main__':
@@ -24,6 +23,7 @@ if __name__ == '__main__':
     base_dir = pathlib.Path(__file__).parents[0]
     dataset_dir = base_dir / 'dataset'
 
+    # TODO: allow file selection
     with open([str(file) for file in dataset_dir.iterdir() if 'label_dict' in str(file)][0], "r") as f:
         labels = list(json.loads(f.read()).values())
 
@@ -66,7 +66,8 @@ if __name__ == '__main__':
                 prediction = sorted(prediction_list, key=itemgetter(1))[-1]
                 predictions_results.append(prediction[0])
         logging.debug(f'results are: {predictions_results}')
-        latex_expression = XYParser(predictions_results, segmentation_results).last_level.parsed_groups
+        overridden_results = ['z', '2', '-', 'sqrt', 'x', '2', '+', 'y', '2']
+        latex_expression = XYParser(overridden_results, segmentation_results).last_level.parsed_groups
         # latex_expression = parse(equation_structure)
         # print(latex_expression)
         # print(prediction)
