@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
-
+from typing import List, Iterable, Union, Optional
+from pathlib import Path
 import keras
 from keras.layers import Input, Conv2D, Activation, AvgPool2D, Dense, Flatten
 from keras.optimizers import Adam, SGD
@@ -10,21 +11,17 @@ except ImportError:
     from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, cohen_kappa_score, confusion_matrix
-
 import matplotlib.pyplot as plt
 import numpy as np
-
 
 # to run file: python ./classification/lenet.py
 
 
 class LeNet:
-    """
-    Class to instantiate LeNet Neural Networks
-    """
+    """Class to instantiate LeNet Neural Networks"""
 
-    def __init__(self, labels, activation='relu', optimizer='adam', lr=0.0001,
-                 loss='categorical_crossentropy', input_shape=32):
+    def __init__(self, labels: Iterable[str], activation: str = 'relu', optimizer: str = 'adam', lr: float = 0.0001,
+                 loss: str = 'categorical_crossentropy', input_shape: float = 32):
         self.input_shape = input_shape
         self.optimizer = Adam(learning_rate=lr)
         if optimizer != 'adam':
@@ -36,13 +33,13 @@ class LeNet:
         self.model = keras.Sequential(
             [
                 Input(shape=(input_shape, input_shape, 1)),
-                Conv2D(filters=6, kernel_size=9, strides=1, padding="same"),
+                Conv2D(filters=6, kernel_size=9, strides=1, padding='same'),
                 Activation(activation),
                 AvgPool2D(pool_size=(2, 2), strides=2, padding='same'),
-                Conv2D(filters=16, kernel_size=9, strides=1, padding="same"),
+                Conv2D(filters=16, kernel_size=9, strides=1, padding='same'),
                 Activation(activation),
                 AvgPool2D(pool_size=(2, 2), strides=2, padding='same'),
-                Conv2D(filters=16, kernel_size=5, strides=1, padding="same"),
+                Conv2D(filters=16, kernel_size=5, strides=1, padding='same'),
                 Activation(activation),
                 AvgPool2D(pool_size=(2, 2), strides=2, padding='same'),
                 Flatten(),
@@ -58,7 +55,8 @@ class LeNet:
         self.test_set = []
         self.history = dict()
 
-    def train(self, data_file, *, batch_size=32, epochs=10, logs_dir=None, weights_dir=None):
+    def train(self, data_file: Union[str, Path], *, batch_size: int = 32, epochs: int = 10,
+              logs_dir: Optional[Union[str, Path]] = None, weights_dir=None):
         # load data
         database = np.load(data_file)
         dataset, labels = database['database'], database['label']
@@ -73,25 +71,25 @@ class LeNet:
         self.history = history.history
         if logs_dir or weights_dir:
             now = datetime.now()
-            date_string = now.strftime("%Y_%m_%d_%H_%M_%S")
-            data_string = f"d={date_string}_e={epochs}_b={batch_size}"
+            date_string = now.strftime('%Y_%m_%d_%H_%M_%S')
+            data_string = f'd={date_string}_e={epochs}_b={batch_size}'
         if logs_dir:
-            with open(f"{logs_dir}/loss_history_lenet_{data_string}.log", 'w') as file:
+            with open(f'{logs_dir}/loss_history_lenet_{data_string}.log', 'w') as file:
                 file.write(json.dumps(self.history, indent=4, sort_keys=True))
             accuracy, cohen_kappa = self.accuracy_metrics()
-            with open(f"{logs_dir}/accuracy_metrics_lenet_{data_string}.log", 'w') as file:
+            with open(f'{logs_dir}/accuracy_metrics_lenet_{data_string}.log', 'w') as file:
                 file.write(accuracy)
                 file.write(f'Cohen Kappa score : {cohen_kappa}')
         if weights_dir:
-            self.save_weights(f"{weights_dir}/lenet_weights_{data_string}.h5", save_format='h5')
+            self.save_weights(f'{weights_dir}/lenet_weights_{data_string}.h5', save_format='h5')
 
-    def save_weights(self, file_path, *, save_format='h5'):
+    def save_weights(self, file_path: Union[str, Path], *, save_format: str = 'h5'):
         self.model.save_weights(file_path, save_format=save_format)
 
-    def load_weights(self, file):
+    def load_weights(self, file: Union[str, Path]):
         self.model.load_weights(file)
 
-    def predict(self, img):
+    def predict(self, img: np.ndarray):
         return self.model.predict(img)
 
     def accuracy_metrics(self):
