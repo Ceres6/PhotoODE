@@ -1,12 +1,15 @@
 import json
 from datetime import datetime
-from typing import List, Iterable, Union, Optional
+from typing import Iterable, Union, Optional
 from pathlib import Path
 from operator import itemgetter
 
 import keras
-from keras.layers import Input, Conv2D, Activation, AvgPool2D, Dense, Flatten
-from keras.optimizers import Adam, SGD
+from keras.layers import InputLayer, Conv2D, Activation, AvgPool2D, Dense, Flatten
+try:
+    from keras.optimizers import Adam, SGD
+except ImportError:
+    from tensorflow.keras.optimizers import Adam, SGD
 try:
     from keras.utils import to_categorical
 except ImportError:
@@ -23,7 +26,7 @@ from preprocessing.image_edition import image_to_square, resize_threshold
 class LeNet:
     """Class to instantiate LeNet Neural Networks"""
 
-    def __init__(self, labels: Iterable[str], activation: str = 'relu', optimizer: str = 'adam', lr: float = 0.0001,
+    def __init__(self, labels: Iterable[str], *, activation: str = 'relu', optimizer: str = 'adam', lr: float = 0.0001,
                  loss: str = 'categorical_crossentropy', input_shape: float = 32):
         self.input_shape = (input_shape, input_shape, 1)
         self.labels = labels
@@ -36,7 +39,7 @@ class LeNet:
 
         self.model = keras.Sequential(
             [
-                Input(shape=self.input_shape),
+                InputLayer(shape=self.input_shape),
                 Conv2D(filters=6, kernel_size=9, strides=1, padding='same'),
                 Activation(activation),
                 AvgPool2D(pool_size=(2, 2), strides=2, padding='same'),
@@ -71,7 +74,8 @@ class LeNet:
         x_test = x_test.reshape(x_test.shape[0], self.input_shape, self.input_shape, 1)
         self.train_set = [x_train, y_train]
         self.test_set = [x_test, y_test]
-        history = self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(x_test, y_test))
+        history = self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(x_test,
+                                                                                                          y_test))
         self.history = history.history
         if logs_dir or weights_dir:
             now = datetime.now()
