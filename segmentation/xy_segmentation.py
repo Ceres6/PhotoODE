@@ -357,7 +357,7 @@ def xy_segmentation(image_path: Union[pathlib.Path, str]) -> Tuple[SegmentationL
     _, img = cv.threshold(img, 180, 255, cv.THRESH_BINARY)
     xy_segmenter = XYSegmentationResults(img)
     xy_segmenter.perform_segmentation()
-    segmentation_results = [img for group in xy_segmenter.last_level.segmentation_groups for img in group]
+    segmentation_results = [img for group in xy_segmenter.last_level.segmentation_groups for img in group.segmented_images]
     segmentation_structure = deepcopy(xy_segmenter)
 
     for level in segmentation_structure.segmentation_levels:

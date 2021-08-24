@@ -43,28 +43,7 @@ if __name__ == '__main__':
         if img_path.is_dir():
             continue
         segmentation_results, segmentation_structure = xy_segmentation(img_path)
-        # Deepcopy of segmentation results to store predictions and parse LaTeX
-        # equation_structure = deepcopy(segmentation_results)
-        # predictions_prob = [None] * len(segmentation_results.last_level)
-        # TODO: Move array prediction to classifier
-        predictions_results = []
-        for group_index, image_group in enumerate(segmentation_results.segmentation_groups):
-            for img_idx, img in enumerate(image_group.segmented_images):
-
-                squared_img = image_to_square(img)
-                resized_img = resize_threshold(squared_img, input_shape)
-
-                # segmentation_results[-1][1][-1] = img
-
-                # cv.imwrite(f"{save_dir}/seg.png", img)
-                input_img = resized_img[np.newaxis, :, :, np.newaxis]
-                prediction_array = lenet.predict(input_img)
-                prediction_list = [[None, prob] for prob in prediction_array.tolist()[0]]
-                for index, row in enumerate(prediction_list):
-                    row[0] = labels[index]
-                # sorted by precision
-                prediction = sorted(prediction_list, key=itemgetter(1))[-1]
-                predictions_results.append(prediction[0])
+        predictions_results = lenet.predict_array(segmentation_results)
         logging.info(f'results are: {predictions_results}')
         latex_expression = XYParser(predictions_results, segmentation_structure).last_level.parsed_groups[0]
         latex_solution = Solver(latex_expression, 'y').latex_solution
