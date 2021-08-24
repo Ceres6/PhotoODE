@@ -48,6 +48,10 @@ class SegmentationGroup:
         self.__segmented_images: List[np.ndarray] = segmented_images
         self.__segmentation_levels: List[int] = segmentation_levels
 
+    def serialize(self):
+        return {'segmentation_operation': self.segmentation_operation, 'segmented_images': self.segmented_images,
+                'segmentation_levels': self.segmentation_levels}
+
     @property
     def segmentation_operation(self) -> SegmentationOperation:
         return self.__segmentation_operation
@@ -75,6 +79,9 @@ class SegmentationLevel:
             self.__segmentation_groups = list()
         else:
             raise TypeError('segmentation_groups arg must be of type SegmentationGroup')
+
+    def serialize(self):
+        return [group.serialize() for group in self.segmentation_groups]
 
     @property
     def segmentation_groups(self) -> List[SegmentationGroup]:
@@ -112,6 +119,9 @@ class XYSegmentationResults:
             # flag to determine whether the division is complete or not
             self.__continue_division = False
             self.__division_step()
+
+    def serialize(self):
+        return [level.serialize() for level in self.segmentation_levels]
 
     @property
     def segmentation_levels(self) -> List[SegmentationLevel]:
@@ -345,7 +355,7 @@ class XYSegmentationResults:
         return SegmentationGroup(operation, segmented_images)  # operation, segmented_images
 
 
-def xy_segmentation(image_path: Union[pathlib.Path, str]) -> Tuple[SegmentationLevel, XYSegmentationResults]:
+def xy_segmentation(image_path: Union[pathlib.Path, str]) -> Tuple[List[np.ndarray], XYSegmentationResults]:
     """
     Returns the segmentation results and the segmentation structure of the image provided by path input
     """
