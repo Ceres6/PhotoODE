@@ -1,7 +1,6 @@
 import pathlib
 import json
 from operator import itemgetter
-from copy import deepcopy
 import logging
 
 import numpy as np
@@ -13,6 +12,7 @@ from segmentation.xy_segmentation import xy_segmentation
 from preprocessing.image_edition import image_to_square, resize_threshold
 from classification.lenet import LeNet
 from parsing.parser import XYParser
+from solver.solver import Solver
 
 # To run: python predict.py
 if __name__ == '__main__':
@@ -42,13 +42,13 @@ if __name__ == '__main__':
     for img_path in img_dir.iterdir():
         if img_path.is_dir():
             continue
-        segmentation_results = xy_segmentation(img_path)
+        segmentation_results, segmentation_structure = xy_segmentation(img_path)
         # Deepcopy of segmentation results to store predictions and parse LaTeX
         # equation_structure = deepcopy(segmentation_results)
         # predictions_prob = [None] * len(segmentation_results.last_level)
         # TODO: Move array prediction to classifier
         predictions_results = []
-        for group_index, image_group in enumerate(segmentation_results.last_level.segmentation_groups):
+        for group_index, image_group in enumerate(segmentation_results.segmentation_groups):
             for img_idx, img in enumerate(image_group.segmented_images):
 
                 squared_img = image_to_square(img)
@@ -65,12 +65,7 @@ if __name__ == '__main__':
                 # sorted by precision
                 prediction = sorted(prediction_list, key=itemgetter(1))[-1]
                 predictions_results.append(prediction[0])
-        logging.debug(f'results are: {predictions_results}')
-        overridden_results = ['z', '2', '-', 'sqrt', 'x', '2', '+', 'y', '2']
-        latex_expression = XYParser(overridden_results, segmentation_results).last_level.parsed_groups
-        # latex_expression = parse(equation_structure)
-        # print(latex_expression)
-        # print(prediction)
-        """
-        for idx, img in enumerate(segmentation_results[-1][1]):
-            segmentation_results[-1][1][idx] = bounding_square(img)"""
+        logging.info(f'results are: {predictions_results}')
+        latex_expression = XYParser(predictions_results, segmentation_structure).last_level.parsed_groups[0]
+        latex_solution = Solver(latex_expression, 'y').latex_solution
+        logging.info(f'solution latex is: {latex_solution}')

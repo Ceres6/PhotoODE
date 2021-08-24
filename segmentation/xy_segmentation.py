@@ -7,9 +7,10 @@ Created on Thu Jan 14 18:43:19 2021
 
 import pathlib
 from enum import IntEnum
-from typing import List, Union
+from typing import List, Tuple, Union
 # import itertools
 import logging
+from copy import deepcopy
 
 import cv2 as cv
 import matplotlib.pyplot as plt
@@ -17,6 +18,7 @@ import numpy as np
 from scipy.ndimage.measurements import label
 
 from utils.utils import show_image, check_list_types
+
 
 class SegmentationOperation(IntEnum):
     BEGINNING = 0
@@ -53,6 +55,10 @@ class SegmentationGroup:
     @property
     def segmented_images(self) -> List[np.ndarray]:
         return self.__segmented_images
+
+    @segmented_images.setter
+    def segmented_images(self, a):
+        self.__segmented_images = [a for img in self.__segmented_images]
 
     @property
     def segmentation_levels(self) -> List[int]:
@@ -93,11 +99,15 @@ class XYSegmentationResults:
     def __init__(self, image: np.ndarray):
         if not isinstance(image, np.ndarray):
             raise TypeError('image arg must be of type np.ndarray')
-        image_array = [image]
-        segmentation_group = SegmentationGroup(SegmentationOperation.BEGINNING, image_array)
-        self.__segmentation_levels: List[SegmentationLevel] = [SegmentationLevel([segmentation_group])]
-
+        self.image = image
         self.__continue_division = True
+        self.__segmentation_levels: List[SegmentationLevel] = []
+
+    def perform_segmentation(self):
+        image_array = [self.image]
+        segmentation_group = SegmentationGroup(SegmentationOperation.BEGINNING, image_array)
+        self.__add_level(SegmentationLevel([segmentation_group]))
+
         while self.__continue_division and len(self.segmentation_levels) < 4:
             # flag to determine whether the division is complete or not
             self.__continue_division = False
@@ -128,7 +138,6 @@ class XYSegmentationResults:
     def __division_step(self):
         """method to produce the next segmentation level"""
         self.__add_level(SegmentationLevel())
-        logging.debug(f'there are {len(self.last_level.segmentation_groups)} segmentation groups in new level')
         if self.last_level is self.previous_level:
             raise ValueError('same reference in distinct levels')
         logging.debug(f'there are {len(self.previous_level.segmentation_groups)} segmentation groups')
@@ -165,10 +174,15 @@ class XYSegmentationResults:
 
     def __segment_image(self, img: np.ndarray) -> SegmentationGroup:
         _, img_inv = cv.threshold(img, 80, 255, cv.THRESH_BINARY_INV)
-        # Get projection over x axis
-        x_projection = np.matrix(np.amax(img_inv, axis=0))
         # Get all connected components in the projection
         connection_structure = np.ones((3, 3), dtype='uint8')
+        _, img_ncomponents = label(img_inv, connection_structure)
+        if img_ncomponents < 2:
+            logging.debug("Just one component detected")
+            return SegmentationGroup(SegmentationOperation.NONE, [img])
+        # Get projection over x axis
+        x_projection = np.matrix(np.amax(img_inv, axis=0))
+
         x_labeled, x_ncomponents = label(x_projection, connection_structure)
         if x_ncomponents > 1:
             return self.__x_division(img, x_labeled, x_ncomponents)
@@ -184,7 +198,7 @@ class XYSegmentationResults:
                 return self.__y_division(img, y_labeled, y_ncomponents)
 
             else:
-                return self.__root_removal(img, img_inv)
+                return self.__mask_removal(img, img_inv)
 
     @staticmethod
     def __x_division(img: np.ndarray, x_labeled: np.ndarray, x_ncomponents: int) -> SegmentationGroup:
@@ -218,14 +232,15 @@ class XYSegmentationResults:
             logging.debug(f'centroid of element {component_index} is: {y_centroid}')
 
             if component_index > 0:
-                if previous_y_centroid - y_centroid > diff_min:
+                if (previous_y_centroid - y_centroid) * 0.9 > diff_min:
                     segmented_levels[component_index] = segmented_levels[component_index - 1] + 1
                     logging.debug("level up")
                     logging.debug(f'current level: {segmented_levels[component_index]}')
-                elif y_centroid - previous_y_centroid > diff_max:
+                elif (y_centroid - previous_y_centroid) * 0.9 > diff_max:
                     segmented_levels[component_index] = segmented_levels[component_index - 1] - 1
                     logging.debug("level down")
                     logging.debug(f'current level: {segmented_levels[component_index]}')
+                    logging.debug(f"y_max: {y_max}, prev_y = {previous_y_centroid}, diff_max: {diff_max}, diff: {y_centroid - previous_y_centroid}")
                 else:
                     segmented_levels[component_index] = segmented_levels[component_index - 1]
                     logging.debug('same level')
@@ -284,15 +299,15 @@ class XYSegmentationResults:
         return SegmentationGroup(SegmentationOperation.Y_SEGMENTATION, segmented_images)  # ('y',), segmented_images
 
     @staticmethod
-    def __root_removal(img: np.ndarray, img_inv: np.ndarray) -> SegmentationGroup:
+    def __mask_removal(img: np.ndarray, img_inv: np.ndarray) -> SegmentationGroup:
         """Function that splits radical from radicand"""
         logging.debug('performing radical-radicand split')
 
         # Expect different returns depending on OpenCV version
         if int(cv.__version__.split('.')[0]) < 4:
-            _, contours, _ = cv.findContours(img_inv, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+            _, contours, _ = cv.findContours(img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         else:
-            contours, _ = cv.findContours(img_inv, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+            contours, _ = cv.findContours(img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
         bound_rects = [None] * len(contours)
 
@@ -330,40 +345,9 @@ class XYSegmentationResults:
         return SegmentationGroup(operation, segmented_images)  # operation, segmented_images
 
 
-# def _division_step(img, *, pad=[3] * 4, debug=False):
-#     """Function that controls the flow of image division"""
-#
-#     _, img_inv = cv.threshold(img, 80, 255, cv.THRESH_BINARY_INV)
-#
-#     # Get projection over x axis
-#     x_projection = np.matrix(np.amax(img_inv, axis=0))
-#
-#     # Get all connected components in the projection
-#     structure = np.ones((3, 3), dtype='uint8')
-#     x_labeled, x_ncomponents = label(x_projection, structure)
-#
-#     if x_ncomponents > 1:
-#         return _x_division(img, x_projection, x_labeled, x_ncomponents, pad=pad,
-#                            debug=debug)
-#     else:
-#         # Get projection over y axis
-#         y_projection = np.matrix(np.amax(img_inv, axis=1)).transpose()
-#
-#         # Get all connected components in the projection
-#         y_labeled, y_ncomponents = label(y_projection, structure)
-#
-#         if y_ncomponents > 1:
-#
-#             return _y_division(img, y_projection, y_labeled, y_ncomponents,
-#                                pad=pad, debug=debug)
-#
-#         else:
-#             return _root_removal(img, img_inv, debug=debug)
-
-
-def xy_segmentation(image_path):
+def xy_segmentation(image_path: Union[pathlib.Path, str]) -> Tuple[SegmentationLevel, XYSegmentationResults]:
     """
-    Function that makes a segmentation of equation images through axis projections
+    Returns the segmentation results and the segmentation structure of the image provided by path input
     """
     img = cv.imread(str(image_path), 0)
     # Apply padding
@@ -371,8 +355,16 @@ def xy_segmentation(image_path):
 
     # Prepare image in grayscale
     _, img = cv.threshold(img, 180, 255, cv.THRESH_BINARY)
+    xy_segmenter = XYSegmentationResults(img)
+    xy_segmenter.perform_segmentation()
+    segmentation_results = [img for group in xy_segmenter.last_level.segmentation_groups for img in group]
+    segmentation_structure = deepcopy(xy_segmenter)
 
-    return XYSegmentationResults(img)
+    for level in segmentation_structure.segmentation_levels:
+        for group in level.segmentation_groups:
+            group.segmented_images = 0
+
+    return segmentation_results, segmentation_structure
 
 
 segmentation_padding = [3] * 4
