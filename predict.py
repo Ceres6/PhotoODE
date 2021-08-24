@@ -16,7 +16,7 @@ from solver.solver import Solver
 
 # To run: python predict.py
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)  # select logging level
+    logging.basicConfig(level=logging.INFO)  # select logging level
     pad = [3] * 4  # [top, bottom, left, right]
     
     # Model instantiation and loading
@@ -32,11 +32,10 @@ if __name__ == '__main__':
     weights_dir = base_dir / 'classification' / 'weights'
     weights_file = sorted([path for path in weights_dir.iterdir()])[-1]
     lenet.load_weights(weights_file)
-    input_shape = lenet.model.layers[0].input_shape[1:3]
     
     # Input directory
     img_dir = base_dir / 'dataset' / 'segmentation'
-    save_dir = base_dir / 'segmentation' / 'segmented'
+    # save_dir = base_dir / 'segmentation' / 'segmented'
     
     # Find all images to segment
     for img_path in img_dir.iterdir():
