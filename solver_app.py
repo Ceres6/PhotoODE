@@ -1,15 +1,21 @@
+import os
 from flask import Flask
 from flask_socketio import SocketIO
 from solver.solver import Solver
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins='http://localhost:3000')
+try:
+    cors_allowed_origins = os.environ['NEXT_URL']
+except KeyError:
+    cors_allowed_origins = 'http://localhost:3000'
+
+socketio = SocketIO(app, cors_allowed_origins=cors_allowed_origins)
 
 
 @app.route("/")
 def index():
-    return "Hello World!"
+    return "Running!"
 
 
 @app.route("/solver")
