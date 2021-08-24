@@ -2,6 +2,8 @@ import json
 from datetime import datetime
 from typing import List, Iterable, Union, Optional
 from pathlib import Path
+from operator import itemgetter
+
 import keras
 from keras.layers import Input, Conv2D, Activation, AvgPool2D, Dense, Flatten
 from keras.optimizers import Adam, SGD
@@ -14,6 +16,7 @@ from sklearn.metrics import classification_report, cohen_kappa_score, confusion_
 import matplotlib.pyplot as plt
 import numpy as np
 
+from preprocessing.image_edition import image_to_square, resize_threshold
 # to run file: python ./classification/lenet.py
 
 
@@ -22,7 +25,8 @@ class LeNet:
 
     def __init__(self, labels: Iterable[str], activation: str = 'relu', optimizer: str = 'adam', lr: float = 0.0001,
                  loss: str = 'categorical_crossentropy', input_shape: float = 32):
-        self.input_shape = input_shape
+        self.input_shape = (input_shape, input_shape, 1)
+        self.labels = labels
         self.optimizer = Adam(learning_rate=lr)
         if optimizer != 'adam':
             if optimizer == 'sgd':
@@ -32,7 +36,7 @@ class LeNet:
 
         self.model = keras.Sequential(
             [
-                Input(shape=(input_shape, input_shape, 1)),
+                Input(shape=self.input_shape),
                 Conv2D(filters=6, kernel_size=9, strides=1, padding='same'),
                 Activation(activation),
                 AvgPool2D(pool_size=(2, 2), strides=2, padding='same'),
@@ -91,6 +95,25 @@ class LeNet:
 
     def predict(self, img: np.ndarray):
         return self.model.predict(img)
+
+    def predict_array(self, array: Iterable[np.ndarray]):
+        predictions_results = [None] * len(array)
+        for img_idx, img in enumerate(array):
+
+            squared_img = image_to_square(img)
+            resized_img = resize_threshold(squared_img, self.input_shape[:2])
+            # segmentation_results[-1][1][-1] = img
+
+            # cv.imwrite(f"{save_dir}/seg.png", img)
+            input_img = resized_img[np.newaxis, :, :, np.newaxis]
+            prediction_array = self.predict(input_img)
+            prediction_list = [[None, prob] for prob in prediction_array.tolist()[0]]
+            for index, row in enumerate(prediction_list):
+                row[0] = self.labels[index]
+            # sorted by precision
+            prediction = sorted(prediction_list, key=itemgetter(1))[-1]
+            predictions_results[img_idx] = prediction[0]
+        return predictions_results
 
     def accuracy_metrics(self):
         # Calculate probability of each class for each image in test set
