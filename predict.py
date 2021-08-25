@@ -1,22 +1,16 @@
 import pathlib
 import json
-from operator import itemgetter
 import logging
 
-import numpy as np
-
-# base_dir = pathlib.Path(__file__).parents[0]
-# sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-
 from segmentation.xy_segmentation import xy_segmentation
-from preprocessing.image_edition import image_to_square, resize_threshold
 from classification.lenet import LeNet
 from parsing.parser import XYParser
 from solver.solver import Solver
+from settings import LOG_LEVEL
 
-# To run: python predict.py
+
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)  # select logging level
+    logging.basicConfig(level=LOG_LEVEL)  # select logging level
     pad = [3] * 4  # [top, bottom, left, right]
     
     # Model instantiation and loading
@@ -42,6 +36,7 @@ if __name__ == '__main__':
         if img_path.is_dir():
             continue
         segmentation_results, segmentation_structure = xy_segmentation(img_path)
+        print(segmentation_results)
         predictions_results = lenet.predict_array(segmentation_results)
         logging.info(f'results are: {predictions_results}')
         latex_expression = XYParser(predictions_results, segmentation_structure).last_level.parsed_groups[0]
