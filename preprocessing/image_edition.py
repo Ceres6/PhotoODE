@@ -18,10 +18,12 @@ def bounding_square(objs: Iterable[np.ndarray]) -> Tuple[int]:
     return x, y, w, h
 
 
-def image_to_square(img: np.ndarray, *, pad: Iterable[int] = [1]*4, debug=False) -> np.ndarray:
+def image_to_square(img: np.ndarray, *, pad: Iterable[int] = [1]*4, white_value=255, threshold=80, debug=False) -> np.ndarray:
     """Function to broadcast an image into a white-background squared_image"""
-    
-    _, img_inv = cv2.threshold(img, 0.3, 1, cv2.THRESH_BINARY_INV)
+    if not isinstance(img, np.ndarray):
+        raise TypeError(f"Expected img of type np.ndarray instead found {type(img)}")
+
+    _, img_inv = cv2.threshold(img, threshold, white_value, cv2.THRESH_BINARY_INV)
     
     structure = np.ones((3, 3), dtype='uint8')
     img_labeled, img_ncomponents = ndimage.label(img_inv, structure)
@@ -31,17 +33,17 @@ def image_to_square(img: np.ndarray, *, pad: Iterable[int] = [1]*4, debug=False)
     
     if w < h:
         crop_img = cv2.copyMakeBorder(img[y:y + h, x:x + w], pad[0], pad[1], 0, 0,
-                                      cv2.BORDER_CONSTANT, value=1)
+                                      cv2.BORDER_CONSTANT, value=white_value)
     elif w > h:
         crop_img = cv2.copyMakeBorder(img[y:y + h, x:x + w], 0, 0, pad[2], pad[3],
-                                      cv2.BORDER_CONSTANT, value=1)
+                                      cv2.BORDER_CONSTANT, value=white_value)
     else:
         crop_img = cv2.copyMakeBorder(img[y:y + h, x:x + w], pad[0], pad[1], pad[2],
-                                      pad[3], cv2.BORDER_CONSTANT, value=1)
+                                      pad[3], cv2.BORDER_CONSTANT, value=white_value)
     height, width = crop_img.shape
     side = max(height, width)
     
-    squared_image = np.ones((side, side), np.uint8) * 255
+    squared_image = np.ones((side, side), np.uint8) * white_value
     try:
         squared_image[int((side - height) / 2):height + int((side - height) / 2),
                       int((side - width) / 2):width + int((side - width) / 2)] = crop_img
@@ -57,21 +59,27 @@ def image_to_square(img: np.ndarray, *, pad: Iterable[int] = [1]*4, debug=False)
     return squared_image
 
 
-def resize_threshold(image: np.ndarray, size: int, *, debug=False) -> np.ndarray:
+def resize_threshold(image: np.ndarray, size: int, *, normalize=False, debug=False) -> np.ndarray:
     """
     Returns the image resized to the input size and thresholded to a value with one connected component if possible
     """
-    norm_image = cv2.normalize(image, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-    resized_img = cv2.resize(norm_image, size, interpolation=cv2.INTER_LANCZOS4)
- 
-    threshold_values = np.arange(0.3, 1, 0.1)
+    if normalize:
+        image = cv2.normalize(image, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+        white_value = 1
+        threshold_values = np.arange(0.3, white_value, 0.1)
+    else:
+        white_value = 255
+        threshold_values = range(80, white_value, 25)
+
+    resized_img = cv2.resize(image, size, interpolation=cv2.INTER_LANCZOS4)
+
     structure = np.ones((3, 3), dtype='uint8')
     for threshold in threshold_values:
-        _, img_inv = cv2.threshold(resized_img, threshold, 1, cv2.THRESH_BINARY_INV)
+        _, img_inv = cv2.threshold(resized_img, threshold, white_value, cv2.THRESH_BINARY_INV)
         _, ncomponents = ndimage.label(img_inv, structure)   
         if ncomponents == 1:
             break
     if debug:
         show_image(resized_img, "resized")
-    _, resized_img = cv2.threshold(resized_img, threshold, 1, cv2.THRESH_BINARY)
+    _, resized_img = cv2.threshold(resized_img, threshold, white_value, cv2.THRESH_BINARY)
     return resized_img
