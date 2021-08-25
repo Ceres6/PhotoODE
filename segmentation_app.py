@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import pathlib
 
 from flask import Flask
 from kafka import kafka
@@ -20,14 +21,19 @@ def index():
     return "Running!"
 
 
-@app.route("/<session_id>", methods=('POST', 'GET'))
+@app.route("/segmentation/<session_id>", methods=('POST', 'GET'))
 def segment_image(session_id):
-    path = 'C:/Users/cespa/Desktop/Programming_languages/PhotoODE/dataset/segmentation/'
-    segmentation_results, segmentation_structure = xy_segmentation(path)
-    message = json.dumps({'segmentation_results': [array.tolist() for array in segmentation_results],
-                          'segmentation_structure': segmentation_structure.serialize(),
-                          'session_id': session_id})
-    kafka.send_message(producer, 'segmentation', message)
+    base_dir = pathlib.Path(__file__).parents[0]
+    img_dir = base_dir / 'dataset' / 'segmentation'
+    for img_path in img_dir.iterdir():
+        if img_path.is_dir():
+            continue
+        # path = '/mnt/c/Users/cespa/Desktop/Programming_languages/PhotoODE/segmentation/CodeCogsEqn.png'
+        segmentation_results, segmentation_structure = xy_segmentation(img_path)
+        message = json.dumps({'segmentation_results': [array.tolist() for array in segmentation_results],
+                              'segmentation_structure': segmentation_structure.serialize(),
+                              'session_id': session_id})
+        kafka.send_message(producer, 'segmentation', message)
     return "{'status': 'sent for processing'}", 200
 
 
