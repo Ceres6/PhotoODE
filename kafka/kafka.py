@@ -33,7 +33,7 @@ def delivery_callback(err, msg):
 
 def send_message(producer, topic_suffix: str, message):
     try:
-        producer.produce(topic_prefix + topic_suffix, message, callback=delivery_callback)
+        producer.produce(topic_prefix + topic_suffix, value=message, callback=delivery_callback)
     except BufferError as e:
         logging.error(f' Local producer queue is full ({len(producer)} messages awaiting delivery): try again\n')
     producer.poll(0)
@@ -68,6 +68,6 @@ def consumer_cycle(consumer):
             raise KafkaException(msg.error())
     else:
         # Proper message
-        logging.error(f'{msg.topic()} [{msg.partition()}] at offset {msg.offset()} with key {str(msg.key())}:\n')
-        logging.info(f'received message: {msg.value()}')
+        logging.info(f'{msg.topic()} [{msg.partition()}] at offset {msg.offset()} with key {str(msg.key())}:\n')
+
         return msg
