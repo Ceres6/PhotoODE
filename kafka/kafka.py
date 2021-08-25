@@ -4,18 +4,20 @@ import logging
 
 from confluent_kafka import Producer, Consumer, KafkaException, KafkaError
 
-topic_prefix = os.environ['CLOUDKARAFKA_TOPIC_PREFIX']
+from settings import CLOUDKARAFKA_BROKERS, CLOUDKARAFKA_PASSWORD, CLOUDKARAFKA_USERNAME, CLOUDKARAFKA_TOPIC_PREFIX
+
+topic_prefix = CLOUDKARAFKA_TOPIC_PREFIX
 
 # Consumer configuration
 # See https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 conf = {
-    'bootstrap.servers': os.environ['CLOUDKARAFKA_BROKERS'],
+    'bootstrap.servers': CLOUDKARAFKA_BROKERS,
     'session.timeout.ms': 6000,
     'default.topic.config': {'auto.offset.reset': 'smallest'},
     'security.protocol': 'SASL_SSL',
     'sasl.mechanisms': 'SCRAM-SHA-256',
-    'sasl.username': os.environ['CLOUDKARAFKA_USERNAME'],
-    'sasl.password': os.environ['CLOUDKARAFKA_PASSWORD']
+    'sasl.username': CLOUDKARAFKA_USERNAME,
+    'sasl.password': CLOUDKARAFKA_PASSWORD
 }
 
 producer = Producer(**conf)

@@ -4,8 +4,10 @@ from flask import Flask
 from segmentation.xy_segmentation import xy_segmentation
 from kafka.kafka import send_message
 
+from settings import FLASK_SECRET_KEY
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = FLASK_SECRET_KEY
 
 
 @app.route("/")
