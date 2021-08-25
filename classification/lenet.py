@@ -39,7 +39,7 @@ class LeNet:
 
         self.model = keras.Sequential(
             [
-                InputLayer(shape=self.input_shape),
+                InputLayer(input_shape=self.input_shape),
                 Conv2D(filters=6, kernel_size=9, strides=1, padding='same'),
                 Activation(activation),
                 AvgPool2D(pool_size=(2, 2), strides=2, padding='same'),
