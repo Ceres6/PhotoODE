@@ -6,7 +6,7 @@ Created on Thu Jan 14 18:43:19 2021
 """
 
 import pathlib
-from enum import IntEnum
+from enum import IntEnum, unique
 from typing import List, Tuple, Union
 # import itertools
 import logging
@@ -20,6 +20,7 @@ from scipy.ndimage.measurements import label
 from utils.utils import show_image, check_list_types
 
 
+@unique
 class SegmentationOperation(IntEnum):
     BEGINNING = 0
     X_SEGMENTATION = 1
@@ -34,8 +35,8 @@ class SegmentationGroup:
         if not isinstance(segmentation_operation, SegmentationOperation):
             raise TypeError('segmentation_operation arg must be of type SegmentationOperation')
         if not check_list_types(segmented_images, np.ndarray):
-            raise TypeError('segmented_images arg must be of type SegmentedImageArray')
-        if segmentation_operation == SegmentationOperation.X_SEGMENTATION:
+            raise TypeError('segmented_images arg must be of type List[np.ndarray]')
+        if segmentation_operation is SegmentationOperation.X_SEGMENTATION:
             if not check_list_types(segmentation_levels, int):
                 raise TypeError('segmentation_levels arg must be of type List[int]')
             if len(segmented_images) != len(segmentation_levels):
@@ -81,7 +82,7 @@ class SegmentationLevel:
             raise TypeError('segmentation_groups arg must be of type SegmentationGroup')
 
     def serialize(self):
-        return [group.serialize() for group in self.segmentation_groups]
+        return {"segmentation_groups": [group.serialize() for group in self.segmentation_groups]}
 
     @property
     def segmentation_groups(self) -> List[SegmentationGroup]:
@@ -113,7 +114,7 @@ class XYSegmentationResults:
     def perform_segmentation(self):
         image_array = [self.image]
         segmentation_group = SegmentationGroup(SegmentationOperation.BEGINNING, image_array)
-        self.__add_level(SegmentationLevel([segmentation_group]))
+        self.add_level(SegmentationLevel([segmentation_group]))
 
         while self.__continue_division and len(self.segmentation_levels) < 4:
             # flag to determine whether the division is complete or not
@@ -121,11 +122,18 @@ class XYSegmentationResults:
             self.__division_step()
 
     def serialize(self):
-        return [level.serialize() for level in self.segmentation_levels]
+        return {"segmentation_levels": [level.serialize() for level in self.segmentation_levels]}
+
 
     @property
     def segmentation_levels(self) -> List[SegmentationLevel]:
         return self.__segmentation_levels
+
+    # @segmentation_levels.setter
+    # def segmentation_levels(self, levels: List[SegmentationLevel]):
+    #     if not check_list_types(levels, SegmentationLevel):
+    #         raise TypeError(f"Expected levels arg of type List[SegmentationLevel] but got {type(levels)}")
+    #     self.__segmentation_levels = levels
 
     @property
     def last_level(self) -> SegmentationLevel:
@@ -140,14 +148,14 @@ class XYSegmentationResults:
     def segmented_images(self):
         return [image for group in self.last_level.segmentation_groups for image in group.segmented_images]
 
-    def __add_level(self, new_level: SegmentationLevel) -> None:
+    def add_level(self, new_level: SegmentationLevel) -> None:
         if not isinstance(new_level, SegmentationLevel):
             raise TypeError('new_level arg must be of type SegmentationLevel')
         self.__segmentation_levels.append(new_level)
 
     def __division_step(self):
         """method to produce the next segmentation level"""
-        self.__add_level(SegmentationLevel())
+        self.add_level(SegmentationLevel())
         if self.last_level is self.previous_level:
             raise ValueError('same reference in distinct levels')
         logging.debug(f'there are {len(self.previous_level.segmentation_groups)} segmentation groups')
@@ -375,6 +383,21 @@ def xy_segmentation(image_path: Union[pathlib.Path, str]) -> Tuple[List[np.ndarr
             group.segmented_images = 0
 
     return segmentation_results, segmentation_structure
+
+
+def dict_to_xy_segmentation_results(dict_) -> XYSegmentationResults:
+    """Parses an input dictionary into an XYSegmentationResults Object"""
+    segmentation_results = XYSegmentationResults(np.ndarray(0))
+    for level in dict_['segmentation_levels']:
+        groups = []
+        for group in level['segmentation_groups']:
+            segmentation_operation = SegmentationOperation(group['segmentation_operation'])
+            segmented_images = [np.ndarray(obj) if isinstance(obj, int) else np.array(obj)
+                                for obj in group['segmented_images']]
+            segmentation_levels = group['segmentation_levels']
+            groups.append(SegmentationGroup(segmentation_operation, segmented_images, segmentation_levels))
+        segmentation_results.add_level(SegmentationLevel(groups))
+    return segmentation_results
 
 
 segmentation_padding = [3] * 4
