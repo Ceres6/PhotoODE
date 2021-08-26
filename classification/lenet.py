@@ -6,14 +6,8 @@ from operator import itemgetter
 
 import keras
 from keras.layers import InputLayer, Conv2D, Activation, AvgPool2D, Dense, Flatten
-try:
-    from keras.optimizers import Adam, SGD
-except ImportError:
-    from tensorflow.keras.optimizers import Adam, SGD
-try:
-    from keras.utils import to_categorical
-except ImportError:
-    from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.optimizers import Adam, SGD
+from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, cohen_kappa_score, confusion_matrix
 import matplotlib.pyplot as plt
@@ -70,8 +64,8 @@ class LeNet:
         labels = to_categorical(labels)
         # split dataset in train and test
         x_train, x_test, y_train, y_test = train_test_split(dataset, labels, test_size=0.1, stratify=labels)
-        x_train = x_train.reshape(x_train.shape[0], self.input_shape, self.input_shape, 1)
-        x_test = x_test.reshape(x_test.shape[0], self.input_shape, self.input_shape, 1)
+        x_train = x_train.reshape(x_train.shape[0], *self.input_shape)
+        x_test = x_test.reshape(x_test.shape[0], *self.input_shape)
         self.train_set = [x_train, y_train]
         self.test_set = [x_test, y_test]
         history = self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(x_test,
