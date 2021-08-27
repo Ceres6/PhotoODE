@@ -2,6 +2,8 @@ import pathlib
 import json
 import logging
 
+import cv2
+
 from segmentation.xy_segmentation import xy_segmentation
 from classification.lenet import LeNet
 from parsing.parser import XYParser
@@ -35,7 +37,8 @@ if __name__ == '__main__':
     for img_path in img_dir.iterdir():
         if img_path.is_dir():
             continue
-        segmentation_results, segmentation_structure = xy_segmentation(img_path)
+        image = cv2.imread(str(img_path), 0)
+        segmentation_results, segmentation_structure = xy_segmentation(image)
         print(segmentation_results)
         predictions_results = lenet.predict_array(segmentation_results)
         logging.info(f'results are: {predictions_results}')

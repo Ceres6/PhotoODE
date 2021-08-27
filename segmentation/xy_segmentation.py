@@ -363,19 +363,21 @@ class XYSegmentationResults:
         return SegmentationGroup(operation, segmented_images)  # operation, segmented_images
 
 
-def xy_segmentation(image_path: Union[pathlib.Path, str]) -> Tuple[List[np.ndarray], XYSegmentationResults]:
+def xy_segmentation(input_image: np.ndarray) -> Tuple[List[np.ndarray], XYSegmentationResults]:
     """
-    Returns the segmentation results and the segmentation structure of the image provided by path input
+    Returns the segmentation results and the segmentation structure of the image provided by input
     """
-    img = cv.imread(str(image_path), 0)
+    # image = cv.imread(str(image_path), 0)
     # Apply padding
-    img = cv.copyMakeBorder(img, *segmentation_padding, cv.BORDER_CONSTANT, value=255)
+    padded_image = cv.copyMakeBorder(input_image, *segmentation_padding, cv.BORDER_CONSTANT, value=255)
 
     # Prepare image in grayscale
-    _, img = cv.threshold(img, 180, 255, cv.THRESH_BINARY)
-    xy_segmenter = XYSegmentationResults(img)
+    _, thresholded_image = cv.threshold(padded_image, 180, 255, cv.THRESH_BINARY)
+    xy_segmenter = XYSegmentationResults(thresholded_image)
+
     xy_segmenter.perform_segmentation()
-    segmentation_results = [img for group in xy_segmenter.last_level.segmentation_groups for img in group.segmented_images]
+    segmentation_results = [img for group in xy_segmenter.last_level.segmentation_groups
+                            for img in group.segmented_images]
     segmentation_structure = deepcopy(xy_segmenter)
 
     for level in segmentation_structure.segmentation_levels:
