@@ -1,16 +1,10 @@
 import pathlib
 import json
-# from sklearn.metrics import classification_report, cohen_kappa_score, confusion_matrix
-import numpy as np
-# import matplotlib.pyplot as plt
 
 from lenet import LeNet
 
-# to run file: python ./Classification/train.py
 
 if __name__ == '__main__':
-    # Path to files
-
     file_path = pathlib.Path(__file__).absolute()
     data_dir = file_path.parents[1] / 'dataset'
     data_file = sorted(file for file in data_dir.iterdir() if 'classification_set' in file.name)[-1]
