@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage.measurements import label
 
-from utils.utils import show_image, check_list_types
+from utils.utils import show_image, check_list_types, normalize_img
 
 
 @unique
@@ -369,7 +369,9 @@ def xy_segmentation(input_image: np.ndarray) -> Tuple[List[np.ndarray], XYSegmen
     """
     # image = cv.imread(str(image_path), 0)
     # Apply padding
-    padded_image = cv.copyMakeBorder(input_image, *segmentation_padding, cv.BORDER_CONSTANT, value=255)
+
+    normalized_image = normalize_img(input_image)
+    padded_image = cv.copyMakeBorder(normalized_image, *segmentation_padding, cv.BORDER_CONSTANT, value=255)
 
     # Prepare image in grayscale
     _, thresholded_image = cv.threshold(padded_image, 180, 255, cv.THRESH_BINARY)
