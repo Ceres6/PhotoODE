@@ -1,5 +1,3 @@
-import os
-
 import flask
 from flask_socketio import SocketIO
 

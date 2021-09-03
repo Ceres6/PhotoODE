@@ -1,7 +1,6 @@
 import concurrent.futures
 import json
 import logging
-import threading
 
 import flask
 from flask_cors import CORS, cross_origin
@@ -25,7 +24,6 @@ parsed_equations = dict()
 
 def message_processor():
     while True:
-        logging.info("looking for messages")
         input_message = kafka.consumer_cycle(consumer)
         if input_message:
             input_json = json.loads(input_message.value())
