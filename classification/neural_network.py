@@ -105,7 +105,8 @@ class NeuralNetwork(ABC):
 
         accuracy = classification_report(y_true, y_pred_max)
         cohen_kappa = cohen_kappa_score(y_true, y_pred_max)
-        return accuracy, cohen_kappa
+        conf_matrix = confusion_matrix(y_true, y_pred_max)
+        return accuracy, cohen_kappa, conf_matrix
 
     def train_test_plt(self):
         fig = plt.figure(figsize=(15, 5))
