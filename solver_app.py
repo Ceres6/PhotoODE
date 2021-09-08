@@ -15,7 +15,7 @@ def index():
 
 
 @app.route("/solver")
-@app.route("/solver/<id>/<latex_eq>/<function>")
+@app.route("/solver/<latex_eq>/<function>")
 def solve_equation(latex_eq='', function=''):
     return {'equation': latex_eq, 'solution': Solver(latex_eq, function).latex_solution}
 
