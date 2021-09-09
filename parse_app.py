@@ -62,5 +62,5 @@ def test():
 if __name__ == '__main__':
     with concurrent.futures.ThreadPoolExecutor() as executor:
         executor.submit(message_processor)
-        app.run(debug=(LOG_LEVEL == 'DEBUG'), port=PORT, threaded=True)
+        app.run(debug=(LOG_LEVEL == 'DEBUG'), port=PORT, threaded=True, host='0.0.0.0')
 
