@@ -22,6 +22,7 @@ parsed_equations = dict()
 def message_processor():
     logging.info("Listening for new messages")
     while True:
+        logging.debug("listening for messages")
         input_message = kafka.consumer_cycle(consumer)
         if input_message:
             input_json = json.loads(input_message.value())
@@ -36,7 +37,6 @@ def message_processor():
             time.sleep(0.1)
 
 
-
 @app.route("/parsed/<session_id>", methods=('GET',))
 @cross_origin(supports_credentials=True, origins=NEXT_URL)
 def parsed(session_id):
@@ -46,6 +46,7 @@ def parsed(session_id):
         logging.debug('event stream')
         global parsed_equations
         while True:
+            logging.debug("reading messages from dict")
             latex_equation = parsed_equations.get(session_id)
             if latex_equation:
                 logging.debug('got it')
