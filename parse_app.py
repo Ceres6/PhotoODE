@@ -1,7 +1,6 @@
 import concurrent.futures
 import json
 import logging
-import time
 
 import flask
 from flask_cors import CORS, cross_origin
@@ -22,7 +21,6 @@ parsed_equations = dict()
 def message_processor():
     logging.info("Listening for new messages")
     while True:
-        logging.debug("listening for messages")
         input_message = kafka.consumer_cycle(consumer)
         if input_message:
             input_json = json.loads(input_message.value())
@@ -34,7 +32,6 @@ def message_processor():
             global parsed_equations
             parsed_equations[session_id] = latex_expression
             logging.info(f'parsed latex: {latex_expression}')
-            time.sleep(0.1)
 
 
 @app.route("/parsed/<session_id>", methods=('GET',))
@@ -46,7 +43,6 @@ def parsed(session_id):
         logging.debug('event stream')
         global parsed_equations
         while True:
-            logging.debug("reading messages from dict")
             latex_equation = parsed_equations.get(session_id)
             if latex_equation:
                 logging.debug('got it')
