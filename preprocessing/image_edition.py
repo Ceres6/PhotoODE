@@ -4,9 +4,6 @@ import cv2
 import numpy as np
 from scipy import ndimage
 
-from utils.utils import show_image
-
-
 def bounding_square(objs: Iterable[np.ndarray]) -> Tuple[int]:
     """Returns a single bounding rectangle that contains all input objects"""
     x = min([obj[1].start for obj in objs])
@@ -52,9 +49,6 @@ def image_to_square(img: np.ndarray, *, pad: Iterable[int] = [1]*4, white_value=
         logging.error(f"{int((side - height) / 2)}:{height + int((side - height) / 2)}")
         logging.error(f"{int((side - width) / 2)}:{width + int((side - width) / 2)}")
         raise e
-    if debug:
-        show_image(crop_img, "original")
-        show_image(squared_image, "squared_image")
     
     return squared_image
 
@@ -79,7 +73,5 @@ def resize_threshold(image: np.ndarray, size: int, *, normalize=False, debug=Fal
         _, ncomponents = ndimage.label(img_inv, structure)   
         if ncomponents == 1:
             break
-    if debug:
-        show_image(resized_img, "resized")
     _, resized_img = cv2.threshold(resized_img, threshold, white_value, cv2.THRESH_BINARY)
     return resized_img
