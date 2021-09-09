@@ -7,7 +7,7 @@ from flask_cors import CORS, cross_origin
 from kafka import kafka
 from parsing.parser import XYParser
 from segmentation.xy_segmentation import dict_to_xy_segmentation_results
-from settings import LOG_LEVEL, FLASK_SECRET_KEY, NEXT_URL
+from settings import LOG_LEVEL, FLASK_SECRET_KEY, NEXT_URL, PORT
 
 app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = FLASK_SECRET_KEY
@@ -16,6 +16,8 @@ CORS(app, supports_credentials=True)
 logging.basicConfig(level=LOG_LEVEL)
 consumer = kafka.init_consumer('classification')
 parsed_equations = dict()
+
+print(PORT)
 
 
 def message_processor():
@@ -60,5 +62,5 @@ def test():
 if __name__ == '__main__':
     with concurrent.futures.ThreadPoolExecutor() as executor:
         executor.submit(message_processor)
-        app.run(debug=(LOG_LEVEL == 'DEBUG'), threaded=True)
+        app.run(debug=(LOG_LEVEL == 'DEBUG'), port=PORT, threaded=True)
 
