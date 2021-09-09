@@ -7,7 +7,7 @@ from flask_cors import CORS, cross_origin
 from kafka import kafka
 from parsing.parser import XYParser
 from segmentation.xy_segmentation import dict_to_xy_segmentation_results
-from settings import LOG_LEVEL, FLASK_SECRET_KEY
+from settings import LOG_LEVEL, FLASK_SECRET_KEY, NEXT_URL
 
 app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = FLASK_SECRET_KEY
@@ -38,7 +38,7 @@ def message_processor():
 
 
 @app.route("/parsed/<session_id>", methods=('GET',))
-@cross_origin(supports_credentials=True)
+@cross_origin(supports_credentials=True, origins=NEXT_URL)
 def parsed(session_id):
     logging.debug('req received')
 
