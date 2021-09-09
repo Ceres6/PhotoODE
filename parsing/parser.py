@@ -55,12 +55,12 @@ class ParsedLevel:
                     if previous_level > 0:
                         parsed_group = ''.join((parsed_group, "}", next(parsed_iterator)))
                     else:
-                        parsed_group = ''.join((parsed_group, "_{", next(parsed_iterator)))
+                        parsed_group += next(parsed_iterator)  # = ''.join((parsed_group, "_{", next(parsed_iterator)))
                 else:
                     if previous_level >= 0:
                         parsed_group = ''.join((parsed_group, "^{", next(parsed_iterator)))
                     else:
-                        parsed_group = ''.join((parsed_group, "}", next(parsed_iterator)))
+                        parsed_group += next(parsed_iterator)  # = ''.join((parsed_group, "}", next(parsed_iterator)))
                 previous_level = symbol_level
             parsed_group += "}" * abs(symbol_level)
         elif operation == SegmentationOperation.Y_SEGMENTATION:
@@ -70,10 +70,14 @@ class ParsedLevel:
                 parsed_group = ''.join((r"\frac{", numerator, "}{", denominator, "}"))
             elif len(segmentation_group.segmented_images) == 2:
                 group1, group2 = next(parsed_iterator), next(parsed_iterator)
-                if [group1, group2] == ['-', '-']:
+                if group2 == 'i':
+                    parsed_group = 'i'
+                elif group2 == 'j':
+                    parsed_group = 'j'
+                elif [group1, group2] == ['-', '-']:
                     parsed_group = '='
                 else:
-                    parsed_group = group2
+                    parsed_group = '='  # group2
         else:
             raise ValueError(f'Operation value ({segmentation_group.segmentation_operation}) out of range')
         logging.debug(f"parsed symbols: {parsed_group}")
