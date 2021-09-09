@@ -1,1 +1,1 @@
-web: gunicorn --worker-class eventlet -w 1 parse_app:app
+web: python run parse_app.py
