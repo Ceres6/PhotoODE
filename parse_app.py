@@ -14,15 +14,12 @@ app.config['SECRET_KEY'] = FLASK_SECRET_KEY
 CORS(app, supports_credentials=True)
 
 logging.basicConfig(level=LOG_LEVEL)
-
 consumer = kafka.init_consumer('classification')
-
-logging.info("Listening for new messages")
-
 parsed_equations = dict()
 
 
 def message_processor():
+    logging.info("Listening for new messages")
     while True:
         input_message = kafka.consumer_cycle(consumer)
         if input_message:
