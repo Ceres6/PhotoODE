@@ -17,8 +17,6 @@ logging.basicConfig(level=LOG_LEVEL)
 consumer = kafka.init_consumer('classification')
 parsed_equations = dict()
 
-print(PORT)
-
 
 def message_processor():
     logging.info("Listening for new messages")
