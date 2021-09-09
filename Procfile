@@ -1,1 +1,1 @@
-web: python run parse_app.py
+web: python parse_app.py
