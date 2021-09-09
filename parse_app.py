@@ -1,6 +1,7 @@
 import concurrent.futures
 import json
 import logging
+import time
 
 import flask
 from flask_cors import CORS, cross_origin
@@ -32,6 +33,8 @@ def message_processor():
             global parsed_equations
             parsed_equations[session_id] = latex_expression
             logging.info(f'parsed latex: {latex_expression}')
+            time.sleep(0.1)
+
 
 
 @app.route("/parsed/<session_id>", methods=('GET',))
@@ -48,10 +51,8 @@ def parsed(session_id):
                 logging.debug('got it')
                 parsed_equations.pop(session_id)
                 return f'data: {latex_equation}\n\n'
-            # else:
-            #     print('waiting')
-            #     return 'listening...'
-            # yield 'data: 1\n\n'
+            time.sleep(0.1)
+
     return flask.Response(event_stream(), mimetype="text/event-stream")
 
 
