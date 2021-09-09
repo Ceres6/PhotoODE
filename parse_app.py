@@ -7,7 +7,7 @@ from flask_cors import CORS, cross_origin
 from kafka import kafka
 from parsing.parser import XYParser
 from segmentation.xy_segmentation import dict_to_xy_segmentation_results
-from settings import LOG_LEVEL, FLASK_SECRET_KEY, NEXT_URL
+from settings import LOG_LEVEL, FLASK_SECRET_KEY, NEXT_URL, PORT
 
 app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = FLASK_SECRET_KEY
@@ -48,10 +48,7 @@ def parsed(session_id):
                 logging.debug('got it')
                 parsed_equations.pop(session_id)
                 return f'data: {latex_equation}\n\n'
-            # else:
-            #     print('waiting')
-            #     return 'listening...'
-            # yield 'data: 1\n\n'
+
     return flask.Response(event_stream(), mimetype="text/event-stream")
 
 
@@ -63,5 +60,5 @@ def test():
 if __name__ == '__main__':
     with concurrent.futures.ThreadPoolExecutor() as executor:
         executor.submit(message_processor)
-        app.run(debug=(LOG_LEVEL == 'DEBUG'), port=5003, threaded=True)
+        app.run(debug=(LOG_LEVEL == 'DEBUG'), port=PORT, threaded=True)
 
