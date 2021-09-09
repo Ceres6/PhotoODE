@@ -3,11 +3,12 @@ from flask_socketio import SocketIO
 
 from solver.solver import Solver
 from settings import NEXT_URL
+
 app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 
 socketio = SocketIO(app, cors_allowed_origins=NEXT_URL)
-
+print(NEXT_URL)
 
 @app.route("/")
 def index():
