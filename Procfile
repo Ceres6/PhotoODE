@@ -1,0 +1,1 @@
+worker: python classification_app.py
