@@ -1,1 +1,1 @@
-web: gunicorn --worker-class eventlet -w 1 segmentation_app:app
+web: gunicorn --worker-class eventlet -w 1 parse_app:app
