@@ -62,7 +62,7 @@ class ParsedLevel:
                     else:
                         parsed_group += next(parsed_iterator)  # = ''.join((parsed_group, "}", next(parsed_iterator)))
                 previous_level = symbol_level
-            parsed_group += "}" * (abs(symbol_level) + symbol_level) / 2
+            parsed_group += "}" * ((abs(symbol_level) + symbol_level) // 2)
         elif operation == SegmentationOperation.Y_SEGMENTATION:
             logging.debug('Operation y segmentation detected')
             if len(segmentation_group.segmented_images) == 3:
