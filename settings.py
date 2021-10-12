@@ -13,5 +13,4 @@ CLOUDKARAFKA_TOPIC_PREFIX = os.getenv('CLOUDKARAFKA_TOPIC_PREFIX')
 FLASK_SECRET_KEY = os.getenv('FLASK_SECRET_KEY') or 'mySecretKey@'
 KAGGLE_USERNAME = os.getenv('KAGGLE_USERNAME')
 KAGGLE_KEY = os.getenv('KAGGLE_KEY')
-NEXT_URL = os.getenv('NEXT_URL') or 'https://photoode-front.herokuapp.com'
-PORT = os.getenv('PORT') or 5003
+NEXT_URL = os.getenv('NEXT_URL') or 'http://localhost:3000'

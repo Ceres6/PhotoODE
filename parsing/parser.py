@@ -35,6 +35,7 @@ class ParsedLevel:
         self.__parsed_groups.append(new_group)
 
     def parse_group(self, segmentation_group: SegmentationGroup, parsed_iterator: Iterator[str]) -> str:
+        # FIXME: Greek letters and operators should start with \ maybe strings with length > 1
         operation = segmentation_group.segmentation_operation
         if operation == SegmentationOperation.NONE or operation == SegmentationOperation.BEGINNING:
             logging.debug('Operation none or beginning detected')
@@ -54,14 +55,14 @@ class ParsedLevel:
                     if previous_level > 0:
                         parsed_group = ''.join((parsed_group, "}", next(parsed_iterator)))
                     else:
-                        parsed_group += next(parsed_iterator)  # = ''.join((parsed_group, "_{", next(parsed_iterator)))
+                        parsed_group = ''.join((parsed_group, "_{", next(parsed_iterator)))
                 else:
                     if previous_level >= 0:
                         parsed_group = ''.join((parsed_group, "^{", next(parsed_iterator)))
                     else:
-                        parsed_group += next(parsed_iterator)  # = ''.join((parsed_group, "}", next(parsed_iterator)))
+                        parsed_group = ''.join((parsed_group, "}", next(parsed_iterator)))
                 previous_level = symbol_level
-            parsed_group += "}" * ((abs(symbol_level) + symbol_level) // 2)
+            parsed_group += "}" * abs(symbol_level)
         elif operation == SegmentationOperation.Y_SEGMENTATION:
             logging.debug('Operation y segmentation detected')
             if len(segmentation_group.segmented_images) == 3:
@@ -69,14 +70,10 @@ class ParsedLevel:
                 parsed_group = ''.join((r"\frac{", numerator, "}{", denominator, "}"))
             elif len(segmentation_group.segmented_images) == 2:
                 group1, group2 = next(parsed_iterator), next(parsed_iterator)
-                if group2 == 'i':
-                    parsed_group = 'i'
-                elif group2 == 'j':
-                    parsed_group = 'j'
-                elif [group1, group2] == ['-', '-']:
+                if [group1, group2] == ['-', '-']:
                     parsed_group = '='
                 else:
-                    parsed_group = '='  # group2
+                    parsed_group = group2
         else:
             raise ValueError(f'Operation value ({segmentation_group.segmentation_operation}) out of range')
         logging.debug(f"parsed symbols: {parsed_group}")

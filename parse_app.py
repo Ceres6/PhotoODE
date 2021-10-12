@@ -1,26 +1,28 @@
 import concurrent.futures
 import json
 import logging
-import time
 
 import flask
 from flask_cors import CORS, cross_origin
 from kafka import kafka
 from parsing.parser import XYParser
 from segmentation.xy_segmentation import dict_to_xy_segmentation_results
-from settings import LOG_LEVEL, FLASK_SECRET_KEY, NEXT_URL, PORT
+from settings import LOG_LEVEL, FLASK_SECRET_KEY
 
 app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = FLASK_SECRET_KEY
 CORS(app, supports_credentials=True)
 
 logging.basicConfig(level=LOG_LEVEL)
+
 consumer = kafka.init_consumer('classification')
+
+logging.info("Listening for new messages")
+
 parsed_equations = dict()
 
 
 def message_processor():
-    logging.info("Listening for new messages")
     while True:
         input_message = kafka.consumer_cycle(consumer)
         if input_message:
@@ -33,11 +35,10 @@ def message_processor():
             global parsed_equations
             parsed_equations[session_id] = latex_expression
             logging.info(f'parsed latex: {latex_expression}')
-        time.sleep(0.1)
 
 
 @app.route("/parsed/<session_id>", methods=('GET',))
-@cross_origin(supports_credentials=True, origins=NEXT_URL)
+@cross_origin(supports_credentials=True)
 def parsed(session_id):
     logging.debug('req received')
 
@@ -50,8 +51,10 @@ def parsed(session_id):
                 logging.debug('got it')
                 parsed_equations.pop(session_id)
                 return f'data: {latex_equation}\n\n'
-            time.sleep(0.1)
-
+            # else:
+            #     print('waiting')
+            #     return 'listening...'
+            # yield 'data: 1\n\n'
     return flask.Response(event_stream(), mimetype="text/event-stream")
 
 
@@ -63,5 +66,5 @@ def test():
 if __name__ == '__main__':
     with concurrent.futures.ThreadPoolExecutor() as executor:
         executor.submit(message_processor)
-        app.run(debug=(LOG_LEVEL == 'DEBUG'), port=PORT, threaded=True, host='0.0.0.0')
+        app.run(debug=(LOG_LEVEL == 'DEBUG'), port=5003, threaded=True)
 
