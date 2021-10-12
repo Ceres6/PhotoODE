@@ -41,8 +41,11 @@ class NeuralNetwork(ABC):
     def predict_array(self, array: Iterable[np.ndarray]):
         predictions_results = [None] * len(array)
         for img_idx, img in enumerate(array):
-
-            squared_img = image_to_square(img)
+            try:
+                squared_img = image_to_square(img)
+            except ValueError:
+                predictions_results[img_idx] = ""
+                continue
             resized_img = resize_threshold(squared_img, self.input_shape[:2])
             input_img = resized_img[np.newaxis, :, :, np.newaxis]
             prediction_array = self.predict(input_img)
