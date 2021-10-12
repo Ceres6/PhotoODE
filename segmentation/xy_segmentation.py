@@ -334,7 +334,7 @@ def xy_segmentation(input_image: np.ndarray) -> Tuple[List[np.ndarray], XYSegmen
     padded_image = cv.copyMakeBorder(normalized_image, *segmentation_padding, cv.BORDER_CONSTANT, value=255)
 
     # Prepare image in grayscale
-    _, thresholded_image = cv.threshold(padded_image, 180, 255, cv.THRESH_BINARY)
+    _, thresholded_image = cv.threshold(padded_image, 100, 255, cv.THRESH_BINARY)
     xy_segmenter = XYSegmentationResults(thresholded_image)
 
     xy_segmenter.perform_segmentation()
