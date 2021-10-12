@@ -35,7 +35,6 @@ class ParsedLevel:
         self.__parsed_groups.append(new_group)
 
     def parse_group(self, segmentation_group: SegmentationGroup, parsed_iterator: Iterator[str]) -> str:
-        # FIXME: Greek letters and operators should start with \ maybe strings with length > 1
         operation = segmentation_group.segmentation_operation
         if operation == SegmentationOperation.NONE or operation == SegmentationOperation.BEGINNING:
             logging.debug('Operation none or beginning detected')

@@ -18,8 +18,6 @@ logging.basicConfig(level=LOG_LEVEL)
 consumer = kafka.init_consumer('classification')
 parsed_equations = dict()
 
-print(PORT)
-
 
 def message_processor():
     logging.info("Listening for new messages")
@@ -36,6 +34,7 @@ def message_processor():
             parsed_equations[session_id] = latex_expression
             logging.info(f'parsed latex: {latex_expression}')
         time.sleep(0.1)
+
 
 @app.route("/parsed/<session_id>", methods=('GET',))
 @cross_origin(supports_credentials=True, origins=NEXT_URL)
