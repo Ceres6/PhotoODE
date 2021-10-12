@@ -2,7 +2,6 @@ from typing import Any, List
 
 import numpy as np
 
-
 def check_list_types(checked_list: List, checked_type: Any) -> bool:
     """Checks if all the elements of a list are of the specified type"""
     if not isinstance(checked_list, list):
