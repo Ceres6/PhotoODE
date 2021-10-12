@@ -8,14 +8,16 @@ Created on Thu Jan 14 18:43:19 2021
 import pathlib
 from enum import IntEnum, unique
 from typing import List, Tuple, Union
+# import itertools
 import logging
 from copy import deepcopy
 
 import cv2 as cv
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage.measurements import label
 
-from utils.utils import check_list_types, normalize_img
+from utils.utils import show_image, check_list_types, normalize_img
 
 
 @unique
@@ -122,6 +124,7 @@ class XYSegmentationResults:
     def serialize(self):
         return {"segmentation_levels": [level.serialize() for level in self.segmentation_levels]}
 
+
     @property
     def segmentation_levels(self) -> List[SegmentationLevel]:
         return self.__segmentation_levels
@@ -179,6 +182,9 @@ class XYSegmentationResults:
                     for i, _ in enumerate(contours):
                         cv.drawContours(im2, contours, i, (100, 100, 100), 1)
                     self.__continue_division = True
+                    if logging.root.level == logging.DEBUG:
+                        show_image(im2,
+                                   f'division of order {len(self.segmentation_levels) - 1} of picture {image_index}')
                     self.last_level.add_group(self.__segment_image(image))
                 else:
                     logging.debug('just one contour detected')
@@ -222,6 +228,15 @@ class XYSegmentationResults:
         segmented_levels[0] = 0
 
         logging.debug('performing vertical division')
+        if logging.root.level == logging.DEBUG:
+            # Axes for cropped images
+            rows = int(np.sqrt(x_ncomponents))
+            cols = x_ncomponents / rows
+            if np.isclose(int(cols), cols):
+                cols = int(cols)
+            else:
+                cols = int(cols) + 1
+            fig, axs = plt.subplots(rows, cols)
 
         for component_index in range(x_ncomponents):
             x, y = np.argmax(x_labeled == component_index + 1), 0
@@ -260,6 +275,12 @@ class XYSegmentationResults:
 
             segmented_images[component_index] = cropped_image
 
+            if logging.root.level == logging.DEBUG:
+                if rows > 1:
+                    axs[int(component_index / cols)][component_index % cols].imshow(segmented_images[component_index],
+                                                                                    cmap='gray')
+                else:
+                    axs[component_index].imshow(segmented_images[component_index], cmap='gray')
         return SegmentationGroup(SegmentationOperation.X_SEGMENTATION, segmented_images,
                                  segmented_levels)  # ('x', segmented_levels), segmented_images
 
@@ -268,6 +289,16 @@ class XYSegmentationResults:
         """Function that divides an image into horizontal components"""
         logging.debug(f'y_ncomponents: {y_ncomponents}')
         logging.debug('performing horizontal division')
+
+        if logging.root.level == logging.DEBUG:
+            # Axes for cropped images
+            rows = int(np.sqrt(y_ncomponents))
+            cols = y_ncomponents / rows
+            if np.isclose(int(cols), cols):
+                cols = int(cols)
+            else:
+                cols = int(cols) + 1
+            fig, axs = plt.subplots(rows, cols)
 
         segmented_images = [None] * y_ncomponents
         for idx in range(y_ncomponents):
@@ -278,6 +309,11 @@ class XYSegmentationResults:
 
             segmented_images[idx] = cropped_image
 
+            if logging.root.level == logging.DEBUG:
+                if rows > 1:
+                    axs[int(idx / cols)][idx % cols].imshow(segmented_images[idx], cmap='gray')
+                else:
+                    axs[idx].imshow(segmented_images[idx], cmap='gray')
         return SegmentationGroup(SegmentationOperation.Y_SEGMENTATION, segmented_images)  # ('y',), segmented_images
 
     @staticmethod
@@ -311,7 +347,11 @@ class XYSegmentationResults:
             radicand = cv.drawContours(img, contours, big_rect_idx, 255, cv.FILLED)
             segmented_images = [radical, radicand]
             operation = SegmentationOperation.ROOT_REMOVAL  # ('r',)
-
+            if logging.root.level == logging.DEBUG:
+                # Axes for cropped images
+                fig, axs = plt.subplots(2)
+                axs[0].imshow(radical, cmap='gray')
+                axs[1].imshow(radicand, cmap='gray')
         else:
             for i, _ in enumerate(contours):
                 # Connect split symbol
