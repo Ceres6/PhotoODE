@@ -323,9 +323,9 @@ class XYSegmentationResults:
 
         # Expect different returns depending on OpenCV version
         if int(cv.__version__.split('.')[0]) < 4:
-            _, contours, _ = cv.findContours(img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+            _, contours, _ = cv.findContours(img_inv, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         else:
-            contours, _ = cv.findContours(img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+            contours, _ = cv.findContours(img_inv, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
         bound_rects = [None] * len(contours)
 
