@@ -41,7 +41,7 @@ class ParsedLevel:
             parsed_group = next(parsed_iterator)
         elif operation == SegmentationOperation.ROOT_REMOVAL:
             logging.debug('Operation root removal detected')
-            parsed_group = ''.join(("{\\", next(parsed_iterator), "{", next(parsed_iterator), "}}"))
+            parsed_group = ''.join(("{", next(parsed_iterator), "{", next(parsed_iterator), "}}"))
 
         elif operation == SegmentationOperation.X_SEGMENTATION:
             logging.debug('Operation x segmentation detected')
@@ -66,7 +66,7 @@ class ParsedLevel:
             logging.debug('Operation y segmentation detected')
             if len(segmentation_group.segmented_images) == 3:
                 numerator, _, denominator = next(parsed_iterator), next(parsed_iterator), next(parsed_iterator)
-                parsed_group = ''.join((r"\frac{", numerator, "}{", denominator, "}"))
+                parsed_group = ''.join(("\\frac{", numerator, "}{", denominator, "}"))
             elif len(segmentation_group.segmented_images) == 2:
                 group1, group2 = next(parsed_iterator), next(parsed_iterator)
                 if group2 == 'i':
