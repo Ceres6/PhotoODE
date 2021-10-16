@@ -16,10 +16,21 @@ class Solver:
         logging.debug(self.equation)
         t = sympy.Symbol('t')
 
-        self.solution = sympy.dsolve(self.equation.subs(function, sympy.Function(function)(t)))
+        self.solution_dict = sympy.dsolve(self.equation.subs(function, sympy.Function(function)(t)), hint='all')
         logging.debug(self.solution)
         self.latex_solution = sympy.latex(self.solution)
         logging.debug(self.latex_solution)
+
+    def best_solution(self) -> None:
+        best_hint = self.solution_dict.pop('best_hint')
+        if best_hint and best_hint != '1st_power_series':
+            return self.solution_dict['best']
+        for key in ['1st_power_series', 'order', 'default']:
+            self.solution_dict.pop(key, None)
+        solution = self.solution_dict.pop('best', None)
+        if len(self.solution_dict):
+            solution = tuple(self.solution_dict.values()[0])
+        return solution
 
 
 if __name__ == '__main__':  # pragma: no cover
