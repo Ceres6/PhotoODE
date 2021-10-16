@@ -32,7 +32,7 @@ class Solver:
             self.solution_dict.pop(key, None)
         self.solution = self.solution_dict.pop('best', None)
         if len(self.solution_dict):
-            self.solution = tuple(self.solution_dict.values()[0])
+            self.solution = tuple(self.solution_dict.values())[0]
 
 
 if __name__ == '__main__':  # pragma: no cover
